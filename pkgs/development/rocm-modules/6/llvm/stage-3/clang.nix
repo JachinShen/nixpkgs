@@ -20,10 +20,12 @@ wrapCCWith rec {
     pname = "rocm-llvm-clang";
     dontUnpack = true;
 
+    # https://github.com/ROCm/llvm-project/blob/rocm-6.2.2/cmake/Modules/GetClangResourceDir.cmake
+    # rocm-6.2.2 use CLANG_MAJOR_VERSION
     installPhase = ''
       runHook preInstall
 
-      clang_version=`${clang-unwrapped}/bin/clang -v 2>&1 | grep "clang version " | grep -E -o "[0-9.-]+"`
+      clang_version=`${clang-unwrapped}/bin/clang -v 2>&1 | grep "clang version " | grep -E -o "[0-9.-]+" | grep -E -o "^[0-9]+"`
       mkdir -p $out/{bin,include/c++/v1,lib/{cmake,clang/$clang_version/{include,lib}},libexec,share}
 
       for path in ${llvm} ${clang-unwrapped} ${lld} ${libc} ${libunwind} ${libcxxabi} ${libcxx} ${compiler-rt}; do
@@ -59,7 +61,7 @@ wrapCCWith rec {
   ];
 
   extraBuildCommands = ''
-    clang_version=`${cc}/bin/clang -v 2>&1 | grep "clang version " | grep -E -o "[0-9.-]+"`
+    clang_version=`${cc}/bin/clang -v 2>&1 | grep "clang version " | grep -E -o "[0-9.-]+" | grep -E -o "^[0-9]+"`
     mkdir -p $out/resource-root
     ln -s ${cc}/lib/clang/$clang_version/{include,lib} $out/resource-root
 

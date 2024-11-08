@@ -36,7 +36,7 @@ callPackage ../base.nix rec {
     rm test/Interpreter/dynamic-library.cpp
 
     # `fatal error: 'stdio.h' file not found`
-    rm test/OpenMP/amdgcn_emit_llvm.c
+    # rm test/OpenMP/amdgcn_emit_llvm.c
   '';
 
   extraPostInstall = ''

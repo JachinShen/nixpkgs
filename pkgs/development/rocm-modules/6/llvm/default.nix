@@ -1,5 +1,5 @@
 { # stdenv FIXME: Try changing back to this with a new ROCm release https://github.com/NixOS/nixpkgs/issues/271943
-  gcc12Stdenv
+  llvmPackages
 , callPackage
 , rocmUpdateScript
 , wrapBintoolsWith
@@ -13,36 +13,37 @@
 let
   ## Stage 1 ##
   # Projects
-  llvm = callPackage ./stage-1/llvm.nix { inherit rocmUpdateScript; stdenv = gcc12Stdenv; };
-  clang-unwrapped = callPackage ./stage-1/clang-unwrapped.nix { inherit rocmUpdateScript llvm; stdenv = gcc12Stdenv; };
-  lld = callPackage ./stage-1/lld.nix { inherit rocmUpdateScript llvm; stdenv = gcc12Stdenv; };
+  llvm = callPackage ./stage-1/llvm.nix { inherit rocmUpdateScript; stdenv = llvmPackages.stdenv; };
+  clang-unwrapped = callPackage ./stage-1/clang-unwrapped.nix { inherit rocmUpdateScript llvm; stdenv = llvmPackages.stdenv; };
+  lld = callPackage ./stage-1/lld.nix { inherit rocmUpdateScript llvm; stdenv = llvmPackages.stdenv; };
 
   # Runtimes
-  runtimes = callPackage ./stage-1/runtimes.nix { inherit rocmUpdateScript llvm; stdenv = gcc12Stdenv; };
+  # runtimes = callPackage ./stage-1/runtimes.nix { inherit rocmUpdateScript llvm; stdenv = llvmPackages.stdenv; };
 
   ## Stage 2 ##
   # Helpers
   bintools-unwrapped = callPackage ./stage-2/bintools-unwrapped.nix { inherit llvm lld; };
   bintools = wrapBintoolsWith { bintools = bintools-unwrapped; };
-  rStdenv = callPackage ./stage-2/rstdenv.nix { inherit llvm clang-unwrapped lld runtimes bintools; stdenv = gcc12Stdenv; };
+  # rStdenv = callPackage ./stage-2/rstdenv.nix { inherit llvm clang-unwrapped lld runtimes bintools; stdenv = llvmPackages.stdenv; };
 in rec {
   inherit
   llvm
-  clang-unwrapped
+  # clang-unwrapped
   lld
-  bintools;
+  # bintools
+  ;
 
   # Runtimes
-  libc = callPackage ./stage-2/libc.nix { inherit rocmUpdateScript; stdenv = rStdenv; };
-  libunwind = callPackage ./stage-2/libunwind.nix { inherit rocmUpdateScript; stdenv = rStdenv; };
-  libcxxabi = callPackage ./stage-2/libcxxabi.nix { inherit rocmUpdateScript; stdenv = rStdenv; };
-  libcxx = callPackage ./stage-2/libcxx.nix { inherit rocmUpdateScript; stdenv = rStdenv; };
-  compiler-rt = callPackage ./stage-2/compiler-rt.nix { inherit rocmUpdateScript llvm; stdenv = rStdenv; };
+  libc = callPackage ./stage-2/libc.nix { inherit rocmUpdateScript; stdenv = llvmPackages.stdenv; };
+  libunwind = callPackage ./stage-2/libunwind.nix { inherit rocmUpdateScript; stdenv = llvmPackages.stdenv; };
+  libcxxabi = callPackage ./stage-2/libcxxabi.nix { inherit rocmUpdateScript; stdenv = llvmPackages.stdenv; };
+  libcxx = callPackage ./stage-2/libcxx.nix { inherit rocmUpdateScript; stdenv = llvmPackages.stdenv; };
+  compiler-rt = callPackage ./stage-2/compiler-rt.nix { inherit rocmUpdateScript llvm; stdenv = llvmPackages.stdenv; };
 
   ## Stage 3 ##
   # Helpers
-  clang = callPackage ./stage-3/clang.nix { inherit llvm lld clang-unwrapped bintools libc libunwind libcxxabi libcxx compiler-rt; stdenv = gcc12Stdenv; };
-  rocmClangStdenv = overrideCC gcc12Stdenv clang;
+  clang = callPackage ./stage-3/clang.nix { inherit llvm lld clang-unwrapped bintools libc libunwind libcxxabi libcxx compiler-rt; stdenv = llvmPackages.stdenv; };
+  rocmClangStdenv = overrideCC llvmPackages.stdenv clang;
 
   # Projects
   clang-tools-extra = callPackage ./stage-3/clang-tools-extra.nix { inherit rocmUpdateScript llvm clang-unwrapped; stdenv = rocmClangStdenv; };
