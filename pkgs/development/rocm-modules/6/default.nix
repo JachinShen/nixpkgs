@@ -39,10 +39,11 @@ in rec {
   };
 
   # Eventually will be in the LLVM repo
-  rocm-device-libs = callPackage ./rocm-device-libs {
-    inherit rocmUpdateScript rocm-cmake;
-    stdenv = llvm.rocmClangStdenv;
-  };
+  # rocm-device-libs = callPackage ./rocm-device-libs {
+  #   inherit rocmUpdateScript rocm-cmake;
+  #   stdenv = llvm.rocmClangStdenv;
+  # };
+  rocm-device-libs = llvm.device-libs;
 
   rocm-runtime = callPackage ./rocm-runtime {
     inherit rocmUpdateScript rocm-device-libs rocm-thunk;
@@ -50,10 +51,11 @@ in rec {
   };
 
   # Eventually will be in the LLVM repo
-  rocm-comgr = callPackage ./rocm-comgr {
-    inherit rocmUpdateScript rocm-cmake rocm-device-libs;
-    stdenv = llvm.rocmClangStdenv;
-  };
+  # rocm-comgr = callPackage ./rocm-comgr {
+  #   inherit rocmUpdateScript rocm-cmake rocm-device-libs;
+  #   stdenv = llvm.rocmClangStdenv;
+  # };
+  rocm-comgr = llvm.comgr;
 
   rocminfo = callPackage ./rocminfo {
     inherit rocmUpdateScript rocm-cmake rocm-runtime;

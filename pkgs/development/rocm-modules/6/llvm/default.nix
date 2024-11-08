@@ -56,4 +56,9 @@ in rec {
 
   # Runtimes
   pstl = callPackage ./stage-3/pstl.nix { inherit rocmUpdateScript; stdenv = rocmClangStdenv; };
+
+  # amd
+  device-libs = callPackage ./stage-3/device-libs.nix { inherit rocmUpdateScript; stdenv = rocmClangStdenv; };
+  comgr = callPackage ./stage-3/comgr.nix { inherit rocmUpdateScript device-libs; stdenv = rocmClangStdenv; };
+  hipcc = callPackage ./stage-3/hipcc.nix { inherit rocmUpdateScript; stdenv = rocmClangStdenv; };
 }
