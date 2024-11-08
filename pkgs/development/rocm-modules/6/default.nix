@@ -86,14 +86,20 @@ in rec {
   };
 
   # Eventually will be in the LLVM repo
-  hipcc = callPackage ./hipcc {
+  # hipcc = callPackage ./hipcc {
+  #   inherit rocmUpdateScript;
+  #   stdenv = llvm.rocmClangStdenv;
+  # };
+  hipcc = llvm.hipcc;
+
+  rocprofiler-register = callPackage ./rocprofiler-register {
     inherit rocmUpdateScript;
     stdenv = llvm.rocmClangStdenv;
   };
 
   # Replaces hip, opencl-runtime, and rocclr
   clr = callPackage ./clr {
-    inherit rocmUpdateScript hip-common hipcc rocm-device-libs rocm-comgr rocm-runtime roctracer rocminfo rocm-smi;
+    inherit rocmUpdateScript hip-common hipcc rocm-device-libs rocm-comgr rocm-runtime roctracer rocminfo rocm-smi rocprofiler-register;
     inherit (llvm) clang;
     stdenv = llvm.rocmClangStdenv;
   };

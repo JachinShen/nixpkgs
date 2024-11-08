@@ -2,30 +2,36 @@
 , stdenv
 , fetchFromGitHub
 , rocmUpdateScript
+, pkg-config
+, cmake
+, fmt
+, glog
 }:
 
 stdenv.mkDerivation (finalAttrs: {
-  pname = "hip-common";
+  pname = "rocprofiler-register";
   version = "6.2.2";
 
   src = fetchFromGitHub {
     owner = "ROCm";
-    repo = "HIP";
+    repo = "rocprofiler-register";
     rev = "rocm-${finalAttrs.version}";
-    hash = "sha256-hjfEmMcTduAy3BlfoWdrzzfDNNbPgOZqXvkzpGrw4CE=";
+    hash = "sha256-+G98+NeEC++zKykRazJNzxXs7S7eQedU06KHs0fnnQk=";
   };
 
-  dontConfigure = true;
-  dontBuild = true;
+  sourceRoot = "${finalAttrs.src.name}";
 
-  installPhase = ''
-    runHook preInstall
+  nativeBuildInputs = [
+    pkg-config
+    cmake
+  ];
 
-    mkdir -p $out
-    mv * $out
+  buildInputs = [
+    fmt
+    glog
+  ];
 
-    runHook postInstall
-  '';
+  patches = [ ./cmake.patch ];
 
   passthru.updateScript = rocmUpdateScript {
     name = finalAttrs.pname;
@@ -34,10 +40,10 @@ stdenv.mkDerivation (finalAttrs: {
   };
 
   meta = with lib; {
-    description = "C++ Heterogeneous-Compute Interface for Portability";
-    homepage = "https://github.com/ROCm/HIP";
+    description = "Registration library for rocprofiler";
+    homepage = "https://github.com/ROCm/rocprofiler-register";
     license = with licenses; [ mit ];
-    maintainers = with maintainers; [ lovesegfault ] ++ teams.rocm.members;
+    maintainers = with maintainers; teams.rocm.members;
     platforms = platforms.linux;
     broken = versions.minor finalAttrs.version != versions.minor stdenv.cc.version || versionAtLeast finalAttrs.version "7.0.0";
   };

@@ -7,16 +7,16 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "hsa-amd-aqlprofile-bin";
-  version = "6.0.2";
+  version = "6.2.2";
 
   src = let
     version = finalAttrs.version;
     dotless = builtins.replaceStrings ["."] ["0"] version;
-    incremental = "115";
+    incremental = "116";
     osRelease = "22.04";
   in fetchurl {
     url = "https://repo.radeon.com/rocm/apt/${version}/pool/main/h/hsa-amd-aqlprofile/hsa-amd-aqlprofile_1.0.0.${dotless}.${dotless}-${incremental}~${osRelease}_amd64.deb";
-    hash = "sha256-0XeKUKaof5pSMS/UgLwumBDBYgyH/pCex9jViUKENXY=";
+    hash = "sha256-hbHpL2mckAIHlIUYUVWPCUJXQ5EHTpwhwLMN4t4VTrQ=";
   };
 
   nativeBuildInputs = [ dpkg ];
