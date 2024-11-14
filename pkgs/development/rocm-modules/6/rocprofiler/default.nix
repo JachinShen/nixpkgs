@@ -46,13 +46,13 @@ let
   };
 in stdenv.mkDerivation (finalAttrs: {
   pname = "rocprofiler";
-  version = "6.0.2";
+  version = "6.2.2";
 
   src = fetchFromGitHub {
     owner = "ROCm";
     repo = "rocprofiler";
     rev = "rocm-${finalAttrs.version}";
-    hash = "sha256-yzgw9g5cHAZpdbU44+1ScZyUcZ2I4GGfjbm9GSqCClk=";
+    hash = "sha256-DvBUa5dT1dAXIwRyAAa+qE+DoXnysn3pYvNqQiB4NjQ=";
   };
 
   patches = [
@@ -66,7 +66,7 @@ in stdenv.mkDerivation (finalAttrs: {
     })
 
     # Fix for missing uint32_t not defined
-    ./0002-include-stdint-in-version.patch
+    # ./0002-include-stdint-in-version.patch
   ];
 
   nativeBuildInputs = [
@@ -96,6 +96,7 @@ in stdenv.mkDerivation (finalAttrs: {
     "-DCMAKE_MODULE_PATH=${clr}/lib/cmake/hip"
     "-DHIP_ROOT_DIR=${clr}"
     "-DGPU_TARGETS=${lib.concatStringsSep ";" gpuTargets}"
+    "-DROCPROFILER_BUILD_PLUGIN_PERFETTO=OFF"
     # Manually define CMAKE_INSTALL_<DIR>
     # See: https://github.com/NixOS/nixpkgs/pull/197838
     "-DCMAKE_INSTALL_BINDIR=bin"

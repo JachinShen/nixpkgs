@@ -4,6 +4,7 @@
 , fetchpatch
 , rocmUpdateScript
 , cmake
+, git
 , rocm-cmake
 , clr
 , python3
@@ -41,7 +42,7 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "rocblas";
-  version = "6.0.2";
+  version = "6.2.2";
 
   outputs = [
     "out"
@@ -55,11 +56,12 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "ROCm";
     repo = "rocBLAS";
     rev = "rocm-${finalAttrs.version}";
-    hash = "sha256-G68d/gvBbTdNx8xR3xY+OkBm5Yxq1NFjxby9BbpOcUk=";
+    hash = "sha256-mKxH7bDF4cjiSbCWHEZBs0evP3MYDZnCv9PHnVD3X2M=";
   };
 
   nativeBuildInputs = [
     cmake
+    git
     rocm-cmake
     clr
   ] ++ lib.optionals buildTensile [

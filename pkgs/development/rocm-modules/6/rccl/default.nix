@@ -16,7 +16,7 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "rccl";
-  version = "6.0.2";
+  version = "6.2.2";
 
   outputs = [
     "out"
@@ -28,7 +28,7 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "ROCm";
     repo = "rccl";
     rev = "rocm-${finalAttrs.version}";
-    hash = "sha256-Oyml47yGEB7fALxBcDjqFngS38cnI39sDj94/JV7wE0=";
+    hash = "sha256-G0EQgNGStURRgZFX4wClsybjJmNeXAC1yLO7XxO+Coc=";
   };
 
   nativeBuildInputs = [
@@ -47,7 +47,8 @@ stdenv.mkDerivation (finalAttrs: {
   ];
 
   cmakeFlags = [
-    "-DCMAKE_CXX_COMPILER=hipcc"
+    "-DCMAKE_CXX_COMPILER=${clr}/bin/hipcc"
+    "-DROCM_PATH=${clr}"
     "-DBUILD_BFD=OFF" # Can't get it to detect bfd.h
     # Manually define CMAKE_INSTALL_<DIR>
     # See: https://github.com/NixOS/nixpkgs/pull/197838

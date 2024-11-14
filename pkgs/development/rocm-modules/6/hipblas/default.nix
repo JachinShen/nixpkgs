@@ -3,6 +3,7 @@
 , fetchFromGitHub
 , rocmUpdateScript
 , cmake
+, git
 , rocm-cmake
 , clr
 , gfortran
@@ -18,7 +19,7 @@
 # Can also use cuBLAS
 stdenv.mkDerivation (finalAttrs: {
   pname = "hipblas";
-  version = "6.0.2";
+  version = "6.2.2";
 
   outputs = [
     "out"
@@ -34,11 +35,12 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "ROCm";
     repo = "hipBLAS";
     rev = "rocm-${finalAttrs.version}";
-    hash = "sha256-Fq7o2sMmHlHIv9UKJw+u/h9K/ZhKVJWwosYTdYIsscA=";
+    hash = "sha256-oh2mqxE5jg7hSEHypVjeKiO+9d05SysreY6u1NUgXck=";
   };
 
   nativeBuildInputs = [
     cmake
+    git
     rocm-cmake
     clr
     gfortran
