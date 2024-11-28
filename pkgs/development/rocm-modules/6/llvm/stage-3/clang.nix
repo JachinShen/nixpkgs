@@ -4,7 +4,7 @@
 , lld
 , clang-unwrapped
 , bintools
-, libc
+# , libc
 , libunwind
 , libcxxabi
 , libcxx
@@ -13,41 +13,46 @@
 
 wrapCCWith rec {
   inherit libcxx bintools;
+  # inherit bintools;
 
   # We do this to avoid HIP pathing problems, and mimic a monolithic install
-  cc = stdenv.mkDerivation (finalAttrs: {
-    inherit (clang-unwrapped) version;
-    pname = "rocm-llvm-clang";
-    dontUnpack = true;
+  # cc = stdenv.mkDerivation (finalAttrs: {
+  #   inherit (clang-unwrapped) version;
+  #   pname = "rocm-llvm-clang";
+  #   dontUnpack = true;
 
-    # https://github.com/ROCm/llvm-project/blob/rocm-6.2.2/cmake/Modules/GetClangResourceDir.cmake
-    # rocm-6.2.2 use CLANG_MAJOR_VERSION
-    installPhase = ''
-      runHook preInstall
+  #   # https://github.com/ROCm/llvm-project/blob/rocm-6.2.2/cmake/Modules/GetClangResourceDir.cmake
+  #   # rocm-6.2.2 use CLANG_MAJOR_VERSION
+  #   installPhase = ''
+  #     runHook preInstall
 
-      clang_version=`${clang-unwrapped}/bin/clang -v 2>&1 | grep "clang version " | grep -E -o "[0-9.-]+" | grep -E -o "^[0-9]+"`
-      mkdir -p $out/{bin,include/c++/v1,lib/{cmake,clang/$clang_version/{include,lib}},libexec,share}
+  #     clang_version=`${clang-unwrapped}/bin/clang -v 2>&1 | grep "clang version " | grep -E -o "[0-9.-]+" | grep -E -o "^[0-9]+"`
+  #     mkdir -p $out/{bin,include/c++/v1,lib/{cmake,clang/$clang_version/{include,lib}},libexec,share}
 
-      for path in ${llvm} ${clang-unwrapped} ${lld} ${libc} ${libunwind} ${libcxxabi} ${libcxx} ${compiler-rt}; do
-        cp -as $path/* $out
-        chmod +w $out/{*,include/c++/v1,lib/{clang/$clang_version/include,cmake}}
-        rm -f $out/lib/libc++.so
-      done
+  #     for path in ${llvm} ${clang-unwrapped} ${lld} ${libunwind} ${libcxxabi} ${libcxx} ${compiler-rt} ; do
+  #       cp -as $path/* $out
+  #       chmod +w $out/{*,include/c++/v1,lib/{clang/$clang_version/include,cmake}}
+  #       rm -f $out/lib/libc++.so
+  #     done
 
-      ln -s $out/lib/* $out/lib/clang/$clang_version/lib
-      ln -sf $out/include/* $out/lib/clang/$clang_version/include
+  #     # ln -s $out/lib/libc++.so.1.0 $out/lib/libc++.so
 
-      runHook postInstall
-    '';
+  #     ln -s $out/lib/* $out/lib/clang/$clang_version/lib
+  #     ln -sf $out/include/* $out/lib/clang/$clang_version/include
 
-    passthru.isClang = true;
-  });
+  #     runHook postInstall
+  #   '';
+
+  #   passthru.isClang = true;
+  # });
+  cc = clang-unwrapped;
 
   extraPackages = [
     llvm
     lld
-    libc
+    # libc
     libunwind
+    # libcxx
     libcxxabi
     compiler-rt
   ];
@@ -56,14 +61,23 @@ wrapCCWith rec {
     "-resource-dir=$out/resource-root"
     "-fuse-ld=lld"
     "-rtlib=compiler-rt"
+    "-B${compiler-rt}/lib"
     "-unwindlib=libunwind"
     "-Wno-unused-command-line-argument"
+    "-lunwind"
+  ];
+
+  nixSupport.cc-ldflags = [
+    "-L${libunwind}/lib"
   ];
 
   extraBuildCommands = ''
     clang_version=`${cc}/bin/clang -v 2>&1 | grep "clang version " | grep -E -o "[0-9.-]+" | grep -E -o "^[0-9]+"`
     mkdir -p $out/resource-root
-    ln -s ${cc}/lib/clang/$clang_version/{include,lib} $out/resource-root
+    ln -s ${cc}/lib/clang/$clang_version/include $out/resource-root
+    ln -s ${compiler-rt}/{share,lib} $out/resource-root
+
+    cp -as ${llvm}/bin/llc $out/bin
 
     # Not sure why, but hardening seems to make things break
     echo "" > $out/nix-support/add-hardening.sh

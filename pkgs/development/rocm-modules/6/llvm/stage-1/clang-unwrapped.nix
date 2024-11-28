@@ -11,8 +11,9 @@ callPackage ../base.nix rec {
   extraBuildInputs = [ llvm ];
 
   extraCMakeFlags = [
-    "-DCLANG_INCLUDE_DOCS=ON"
-    "-DCLANG_INCLUDE_TESTS=ON"
+    # "-DCLANG_INCLUDE_DOCS=ON"
+    # "-DCLANG_INCLUDE_TESTS=ON"
+    # "-DCLANG_DEFAULT_LINKER=lld"
   ];
 
   extraPostPatch = ''

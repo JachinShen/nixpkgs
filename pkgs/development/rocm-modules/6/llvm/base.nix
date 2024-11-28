@@ -29,6 +29,7 @@
 , extraNativeBuildInputs ? [ ]
 , extraBuildInputs ? [ ]
 , extraCMakeFlags ? [ ]
+, extraOutputs ? [ ]
 , extraPostPatch ? ""
 , checkTargets ? [(
   lib.optionalString buildTests (
@@ -62,7 +63,7 @@ in stdenv.mkDerivation (finalAttrs: {
   ] ++ lib.optionals buildMan [
     "man"
     "info" # Avoid `attribute 'info' missing` when using with wrapCC
-  ];
+  ] ++ extraOutputs;
 
   patches = extraPatches;
 
@@ -85,6 +86,7 @@ in stdenv.mkDerivation (finalAttrs: {
     python3Packages.recommonmark
   ] ++ lib.optionals (buildTests && !finalAttrs.passthru.isLLVM) [
     lit
+    # python3Packages.psutil
   ] ++ extraNativeBuildInputs;
 
   buildInputs = [
