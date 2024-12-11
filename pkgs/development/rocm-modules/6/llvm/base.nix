@@ -105,6 +105,7 @@ in stdenv.mkDerivation (finalAttrs: {
   sourceRoot = "${finalAttrs.src.name}/${targetDir}";
 
   cmakeFlags = [
+    "-DLLVM_PARALLEL_LINK_JOBS=4"
     "-DLLVM_TARGETS_TO_BUILD=${builtins.concatStringsSep ";" llvmTargetsToBuild'}"
   ] ++ lib.optionals (finalAttrs.passthru.isLLVM && targetProjects != [ ]) [
     "-DLLVM_ENABLE_PROJECTS=${lib.concatStringsSep ";" targetProjects}"
@@ -153,7 +154,7 @@ in stdenv.mkDerivation (finalAttrs: {
   '' + extraPostInstall;
 
   passthru = {
-    isLLVM = targetDir == "llvm";
+    isLLVM = targetDir == "llvm" || targetName == "libcxx";
     isClang = targetDir == "clang" || builtins.elem "clang" targetProjects;
 
     updateScript = rocmUpdateScript {

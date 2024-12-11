@@ -1,0 +1,13 @@
+diff --git a/hipamd/src/hip_code_object.cpp b/hipamd/src/hip_code_object.cpp
+index 73b9e26..c19fab5 100644
+--- a/hipamd/src/hip_code_object.cpp
++++ b/hipamd/src/hip_code_object.cpp
+@@ -528,7 +528,7 @@ hipError_t CodeObject::ExtractCodeObjectFromMemory(
+ hipError_t CodeObject::extractCodeObjectFromFatBinary(
+     const void* data, const std::vector<std::string>& agent_triple_target_ids,
+     std::vector<std::pair<const void*, size_t>>& code_objs) {
+-  std::string magic((const char*)data, kOffloadBundleUncompressedMagicStrSize);
++  std::string magic((const char*)data, kOffloadBundleUncompressedMagicStrSize-1);
+   if (magic.compare(kOffloadBundleUncompressedMagicStr)) {
+     return hipErrorInvalidKernelFile;
+   }

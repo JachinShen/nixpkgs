@@ -1,5 +1,6 @@
 { stdenv
 , callPackage
+, llvmPackages
 , rocmUpdateScript
 }:
 
@@ -14,6 +15,7 @@ callPackage ../base.nix rec {
   extraPostPatch = ''
     cd device-libs
   '';
+  extraBuildInputs = [ llvmPackages.libllvm ];
   # targetRuntimes = [ targetName ];
   # checkTargets = [ "check-${targetName}" ];
 }

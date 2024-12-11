@@ -16,7 +16,7 @@
 , openmp
 , amd-blis
 , python3Packages
-, buildTensile ? true
+, buildTensile ? false
 , buildTests ? false
 , buildBenchmarks ? false
 , tensileLogic ? "asm_full"

@@ -9,9 +9,9 @@
 , rocm-cmake
 , rocblas
 , rocmlir
+, rocrand
 , clr
 , clang-tools-extra
-, clang-ocl
 , composable_kernel
 , frugally-deep
 , rocm-docs-core
@@ -34,13 +34,13 @@
 }:
 
 let
-  version = "6.0.2";
+  version = "6.2.2";
 
   src = fetchFromGitHub {
     owner = "ROCm";
     repo = "MIOpen";
     rev = "rocm-${version}";
-    hash = "sha256-mbOdlSb0ESKi9hMkq3amv70Xkp/YKnZYre24d/y5TD0=";
+    hash = "sha256-hJTCyvvquFU/H34Qq0tmy6MQxOZJSFIk3jD8acZaWYo=";
     fetchLFS = true;
     leaveDotGit = true;
 
@@ -116,11 +116,11 @@ in stdenv.mkDerivation (finalAttrs: {
       url = "https://github.com/ROCm/MIOpen/commit/3413d2daaeb44b7d6eadcc03033a5954a118491e.patch";
       hash = "sha256-ST4snUcTmmSI1Ogx815KEX9GdMnmubsavDzXCGJkiKs=";
     })
-    (fetchpatch {
-      name = "Extend-MIOpen-ISA-compatibility.patch";
-      url = "https://github.com/GZGavinZhao/MIOpen/commit/416088b534618bd669a765afce59cfc7197064c1.patch";
-      hash = "sha256-OwONCA68y8s2GqtQj+OtotXwUXQ5jM8tpeM92iaD4MU=";
-    })
+    # (fetchpatch {
+    #   name = "Extend-MIOpen-ISA-compatibility.patch";
+    #   url = "https://github.com/GZGavinZhao/MIOpen/commit/416088b534618bd669a765afce59cfc7197064c1.patch";
+    #   hash = "sha256-OwONCA68y8s2GqtQj+OtotXwUXQ5jM8tpeM92iaD4MU=";
+    # })
   ];
 
   outputs = [
@@ -142,7 +142,7 @@ in stdenv.mkDerivation (finalAttrs: {
   buildInputs = [
     rocblas
     rocmlir
-    clang-ocl
+    rocrand
     composable_kernel
     half
     boost
@@ -167,6 +167,8 @@ in stdenv.mkDerivation (finalAttrs: {
   cmakeFlags = [
     "-DCMAKE_CXX_FLAGS=-Wno-#warnings" # <half> -> <half/half.hpp>
     "-DUNZIPPER=${bzip2}/bin/bunzip2"
+    "-DMIOPEN_OFFLOADBUNDLER_BIN=${stdenv.cc.cc}/bin/clang-offload-bundler"
+    "-DMIOPEN_USE_SQLITE_PERFDB=ON"
     # Manually define CMAKE_INSTALL_<DIR>
     # See: https://github.com/NixOS/nixpkgs/pull/197838
     "-DCMAKE_INSTALL_BINDIR=bin"
@@ -184,21 +186,20 @@ in stdenv.mkDerivation (finalAttrs: {
     patchShebangs test src/composable_kernel fin utils install_deps.cmake
 
     substituteInPlace CMakeLists.txt \
-      --replace "unpack_db(\"\''${CMAKE_SOURCE_DIR}/src/kernels/\''${FILE_NAME}.kdb.bz2\")" "" \
-      --replace "MIOPEN_HIP_COMPILER MATCHES \".*clang\\\\+\\\\+$\"" "true" \
-      --replace "set(MIOPEN_TIDY_ERRORS ALL)" "" # error: missing required key 'key'
+      --replace-fail "MIOPEN_HIP_COMPILER MATCHES \".*clang\\\\+\\\\+.*\"" "true" \
+      --replace-fail "set(MIOPEN_TIDY_ERRORS ALL)" "" # error: missing required key 'key'
 
-    substituteInPlace test/gtest/CMakeLists.txt \
-      --replace "include(googletest)" ""
+    # substituteInPlace test/gtest/CMakeLists.txt \
+      # --replace "include(googletest)" ""
 
-    substituteInPlace test/gtest/CMakeLists.txt \
-      --replace-fail " gtest_main " " ${gtest}/lib/libgtest.so ${gtest}/lib/libgtest_main.so "
+    # substituteInPlace test/gtest/CMakeLists.txt \
+      # --replace-fail " gtest_main " " ${gtest}/lib/libgtest.so ${gtest}/lib/libgtest_main.so "
 
-    ln -sf ${gfx900} src/kernels/gfx900.kdb
-    ln -sf ${gfx906} src/kernels/gfx906.kdb
-    ln -sf ${gfx908} src/kernels/gfx908.kdb
-    ln -sf ${gfx90a} src/kernels/gfx90a.kdb
-    ln -sf ${gfx1030} src/kernels/gfx1030.kdb
+    # ln -sf ${gfx900} src/kernels/gfx900.kdb
+    # ln -sf ${gfx906} src/kernels/gfx906.kdb
+    # ln -sf ${gfx908} src/kernels/gfx908.kdb
+    # ln -sf ${gfx90a} src/kernels/gfx90a.kdb
+    # ln -sf ${gfx1030} src/kernels/gfx1030.kdb
   '';
 
   # Unfortunately, it seems like we have to call make on these manually

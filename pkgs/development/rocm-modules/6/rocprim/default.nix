@@ -8,9 +8,9 @@
 , clr
 , gtest
 , gbenchmark
-, buildTests ? false
+, buildTests ? true
 , buildBenchmarks ? false
-, gpuTargets ? [ ]
+, gpuTargets ? [ "gfx1031" ]
 }:
 
 stdenv.mkDerivation (finalAttrs: {

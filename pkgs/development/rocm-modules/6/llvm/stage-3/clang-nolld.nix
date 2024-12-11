@@ -15,7 +15,7 @@
 wrapCCWith rec {
   # inherit libcxx bintools;
   libcxx = runtimes;
-  inherit bintools;
+  # inherit bintools;
 
   # We do this to avoid HIP pathing problems, and mimic a monolithic install
   # cc = stdenv.mkDerivation (finalAttrs: {

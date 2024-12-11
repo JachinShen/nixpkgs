@@ -92,9 +92,10 @@ in rec {
   # };
   hipcc = llvm.hipcc;
 
+  # Needs GCC
   rocprofiler-register = callPackage ./rocprofiler-register {
-    inherit rocmUpdateScript;
-    stdenv = llvm.rocmClangStdenv;
+    inherit rocmUpdateScript stdenv;
+    inherit (llvm) clang;
   };
 
   # Replaces hip, opencl-runtime, and rocclr
@@ -206,7 +207,7 @@ in rec {
   };
 
   rocsolver = callPackage ./rocsolver {
-    inherit rocmUpdateScript rocm-cmake rocblas rocsparse clr;
+    inherit rocmUpdateScript rocm-cmake rocblas rocsparse rocprim clr;
     stdenv = llvm.rocmClangStdenv;
   };
 
@@ -232,7 +233,7 @@ in rec {
   };
 
   hipsolver = callPackage ./hipsolver {
-    inherit rocmUpdateScript rocm-cmake rocblas rocsolver clr;
+    inherit rocmUpdateScript rocm-cmake rocblas rocsolver rocsparse clr;
     stdenv = llvm.rocmClangStdenv;
   };
 
@@ -249,12 +250,42 @@ in rec {
     It is still available for some time as part of rocmPackages_5.
   ''; # Added 2024-3-3
 
-  composable_kernel = callPackage ./composable_kernel/unpack.nix {
+  rocmtoolkit-merged = symlinkJoin {
+    name = "rocmtoolkit-merged";
+
+    paths = [
+      rocm-core
+      rocm-thunk
+      rocm-device-libs
+      roctracer
+      rocdbgapi
+      rocm-smi
+      hsa-amd-aqlprofile-bin
+      clr
+    ];
+
+    postBuild = ''
+      rm -rf $out/nix-support
+    '';
+  };
+  # composable_kernel = callPackage ./composable_kernel/unpack.nix {
     composable_kernel_build = callPackage ./composable_kernel {
-      inherit rocmUpdateScript rocm-cmake clr;
-      inherit (llvm) openmp clang-tools-extra;
+      inherit rocmUpdateScript rocm-cmake clr rocmtoolkit-merged;
+      inherit (llvm) openmp clang-tools-extra ;
       stdenv = llvm.rocmClangStdenv;
+      gpuTargets = [ "gfx90a" "gfx1030" ];
+      # gpuTargets = [ "gfx1030" ];
     };
+    composable_kernel_codegen = callPackage ./composable_kernel/codegen.nix {
+      inherit rocmUpdateScript rocm-cmake clr rocmtoolkit-merged;
+      inherit (llvm) openmp clang-tools-extra ;
+      stdenv = llvm.rocmClangStdenv;
+      gpuTargets = [ "gfx90a" "gfx1030" ];
+      # gpuTargets = [ "gfx1030" ];
+    };
+  composable_kernel = callPackage ./composable_kernel/unpack.nix {
+    composable_kernel_build = composable_kernel_build;
+    composable_kernel_codegen = composable_kernel_codegen;
   };
 
   half = callPackage ./half {
@@ -263,11 +294,12 @@ in rec {
   };
 
   miopen = callPackage ./miopen {
-    inherit rocmUpdateScript rocm-cmake rocblas clang-ocl composable_kernel rocm-comgr clr rocm-docs-core half roctracer;
+    inherit rocmUpdateScript rocm-cmake rocblas rocrand composable_kernel rocm-comgr clr rocm-docs-core half roctracer;
     inherit (llvm) clang-tools-extra;
     stdenv = llvm.rocmClangStdenv;
     rocmlir = rocmlir-rock;
     boost = boost179.override { enableStatic = true; };
+    # buildTests = true;
   };
 
   miopen-hip = miopen;
@@ -280,7 +312,7 @@ in rec {
   migraphx = callPackage ./migraphx {
     inherit rocmUpdateScript rocm-cmake rocblas composable_kernel miopen clr half rocm-device-libs;
     inherit (llvm) openmp clang-tools-extra;
-    stdenv = llvm.rocmClangStdenv;
+    stdenv = llvm.rocmClangNoLLDStdenv;
     rocmlir = rocmlir-rock;
   };
 

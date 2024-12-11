@@ -19,6 +19,7 @@ tags
 /doc/manual.html
 /doc/manual.pdf
 /source/
+/source_*/
 .version-suffix
 .direnv
 .envrc

@@ -48,7 +48,7 @@ let
   ]));
 in stdenv.mkDerivation (finalAttrs: {
   pname = "migraphx";
-  version = "6.0.2";
+  version = "6.2.2";
 
   outputs = [
     "out"
@@ -62,7 +62,7 @@ in stdenv.mkDerivation (finalAttrs: {
     owner = "ROCm";
     repo = "AMDMIGraphX";
     rev = "rocm-${finalAttrs.version}";
-    hash = "sha256-VDYUSpWYAdJ63SKVCO26DVAC3RtZM7otqN0sYUA6DBQ=";
+    hash = "sha256-QUMBrWgcVmv8WfDDUOKGx9/EipihKXB3DsRxojWHLco=sha256-QUMBrWgcVmv8WfDDUOKGx9/EipihKXB3DsRxojWHLco=";
   };
 
   nativeBuildInputs = [
@@ -102,15 +102,20 @@ in stdenv.mkDerivation (finalAttrs: {
 
   cmakeFlags = [
     "-DMIGRAPHX_ENABLE_GPU=ON"
-    "-DMIGRAPHX_ENABLE_CPU=ON"
-    "-DMIGRAPHX_ENABLE_FPGA=ON"
+    "-DMIGRAPHX_ENABLE_CPU=OFF"
+    "-DMIGRAPHX_ENABLE_FPGA=OFF"
     "-DMIGRAPHX_ENABLE_MLIR=OFF" # LLVM or rocMLIR mismatch?
+    "-DMIGRAPHX_USE_COMPOSABLEKERNEL=OFF"
     # Manually define CMAKE_INSTALL_<DIR>
     # See: https://github.com/NixOS/nixpkgs/pull/197838
     "-DCMAKE_INSTALL_BINDIR=bin"
     "-DCMAKE_INSTALL_LIBDIR=lib"
     "-DCMAKE_INSTALL_INCLUDEDIR=include"
     "-DGPU_TARGETS=${lib.concatStringsSep ";" gpuTargets}"
+  ];
+  
+  patches = [
+    ./fix-header.patch
   ];
 
   postPatch = ''
@@ -130,7 +135,7 @@ in stdenv.mkDerivation (finalAttrs: {
       --replace "if(WIN32)" "if(TRUE)"
   '' + lib.optionalString (!buildDocs) ''
     substituteInPlace CMakeLists.txt \
-      --replace "add_subdirectory(doc)" ""
+      --replace "add_subdirectory(docs)" ""
   '' + lib.optionalString (!buildTests) ''
     substituteInPlace CMakeLists.txt \
       --replace "add_subdirectory(test)" ""
@@ -166,6 +171,6 @@ in stdenv.mkDerivation (finalAttrs: {
     license = with licenses; [ mit ];
     maintainers = teams.rocm.members;
     platforms = platforms.linux;
-    broken = true;
+    # broken = true;
   };
 })

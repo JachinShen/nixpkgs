@@ -1,0 +1,14 @@
+diff --git a/amd/hipcc/CMakeLists.txt b/amd/hipcc/CMakeLists.txt
+index 484e833..31959b1 100755
+--- a/amd/hipcc/CMakeLists.txt
++++ b/amd/hipcc/CMakeLists.txt
+@@ -18,9 +18,6 @@ option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
+ set(CMAKE_CXX_STANDARD 17)
+ set(CMAKE_CXX_STANDARD_REQUIRED True)
+ 
+-set(ADDITIONAL_SHARED_LIBRARIES_TO_LINK
+-  libstdc++fs.so)
+-
+ set(HIPCC_BIN
+   hipcc.bin)
+ set(HIPCC_SOURCES

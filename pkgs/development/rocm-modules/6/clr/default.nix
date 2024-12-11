@@ -8,6 +8,7 @@
 , makeWrapper
 , cmake
 , perl
+, llvm
 , clang
 , hip-common
 , hipcc
@@ -23,6 +24,7 @@
 , libxml2
 , libX11
 , python3Packages
+, perlPackages
 }:
 
 let
@@ -37,15 +39,6 @@ let
     "--set ROCM_PATH $out"
   ];
 
-  # https://github.com/NixOS/nixpkgs/issues/305641
-  # Not needed when 3.29.2 is in unstable
-  # cmake' = cmake.overrideAttrs(old: rec {
-  #   version = "3.29.2";
-  #   src = fetchurl {
-  #     url = "https://cmake.org/files/v${lib.versions.majorMinor version}/cmake-${version}.tar.gz";
-  #     hash = "sha256-NttLaSaqt0G6bksuotmckZMiITIwi03IJNQSPLcwNS4=";
-  #   };
-  # });
 in stdenv.mkDerivation (finalAttrs: {
   pname = "clr";
   version = "6.2.2";
@@ -94,6 +87,9 @@ in stdenv.mkDerivation (finalAttrs: {
     "-DHIP_PLATFORM=amd"
     "-DPROF_API_HEADER_PATH=${roctracer.src}/inc/ext"
     "-DROCM_PATH=${rocminfo}"
+    # "-D__HIP_ENABLE_PCH=OFF"
+    # "-DUSE_COMGR_LIBRARY=ON"
+    "-DHIP_OFFICIAL_BUILD=ON"
 
     # Temporarily set variables to work around upstream CMakeLists issue
     # Can be removed once https://github.com/ROCm/rocm-cmake/issues/121 is fixed
@@ -102,28 +98,30 @@ in stdenv.mkDerivation (finalAttrs: {
     "-DCMAKE_INSTALL_LIBDIR=lib"
   ];
 
-  # patches = [
-  #   (fetchpatch {
-  #     name = "add-missing-operators.patch";
-  #     url = "https://github.com/ROCm/clr/commit/86bd518981b364c138f9901b28a529899d8654f3.patch";
-  #     hash = "sha256-lbswri+zKLxif0hPp4aeJDeVfadhWZz4z+m+G2XcCPI=";
-  #   })
-  #   (fetchpatch {
-  #     name = "static-functions.patch";
-  #     url = "https://github.com/ROCm/clr/commit/77c581a3ebd47b5e2908973b70adea66891159ee.patch";
-  #     hash = "sha256-auBedbd7rghlKav7A9V6l64J7VmtE9GizIdi5gWj+fs=";
-  #   })
-  #   (fetchpatch {
-  #     name = "extend-hip-isa-compatibility-check.patch";
-  #     url = "https://salsa.debian.org/rocm-team/rocm-hipamd/-/raw/d6d20142c37e1dff820950b16ff8f0523241d935/debian/patches/0026-extend-hip-isa-compatibility-check.patch";
-  #     hash = "sha256-eG0ALZZQLRzD7zJueJFhi2emontmYy6xx8Rsm346nQI=";
-  #   })
-  #   (fetchpatch {
-  #     name = "improve-rocclr-isa-compatibility-check.patch";
-  #     url = "https://salsa.debian.org/rocm-team/rocm-hipamd/-/raw/d6d20142c37e1dff820950b16ff8f0523241d935/debian/patches/0025-improve-rocclr-isa-compatibility-check.patch";
-  #     hash = "sha256-8eowuRiOAdd9ucKv4Eg9FPU7c6367H3eP3fRAGfXc6Y=";
-  #   })
-  # ];
+  patches = [
+    # (fetchpatch {
+    #   name = "add-missing-operators.patch";
+    #   url = "https://github.com/ROCm/clr/commit/86bd518981b364c138f9901b28a529899d8654f3.patch";
+    #   hash = "sha256-lbswri+zKLxif0hPp4aeJDeVfadhWZz4z+m+G2XcCPI=";
+    # })
+    # (fetchpatch {
+    #   name = "static-functions.patch";
+    #   url = "https://github.com/ROCm/clr/commit/77c581a3ebd47b5e2908973b70adea66891159ee.patch";
+    #   hash = "sha256-auBedbd7rghlKav7A9V6l64J7VmtE9GizIdi5gWj+fs=";
+    # })
+    # (fetchpatch {
+    #   name = "extend-hip-isa-compatibility-check.patch";
+    #   url = "https://salsa.debian.org/rocm-team/rocm-hipamd/-/raw/d6d20142c37e1dff820950b16ff8f0523241d935/debian/patches/0026-extend-hip-isa-compatibility-check.patch";
+    #   hash = "sha256-eG0ALZZQLRzD7zJueJFhi2emontmYy6xx8Rsm346nQI=";
+    # })
+    ./fix-magic-compare.patch
+    ./0026-extend-hip-isa-compatibility-check.patch
+    (fetchpatch {
+      name = "improve-rocclr-isa-compatibility-check.patch";
+      url = "https://salsa.debian.org/rocm-team/rocm-hipamd/-/raw/d6d20142c37e1dff820950b16ff8f0523241d935/debian/patches/0025-improve-rocclr-isa-compatibility-check.patch";
+      hash = "sha256-8eowuRiOAdd9ucKv4Eg9FPU7c6367H3eP3fRAGfXc6Y=";
+    })
+  ];
 
   postPatch = ''
     patchShebangs hipamd/*.sh
@@ -131,11 +129,11 @@ in stdenv.mkDerivation (finalAttrs: {
 
     # We're not on Windows so these are never installed to hipcc...
     substituteInPlace hipamd/CMakeLists.txt \
-      --replace "install(PROGRAMS \''${HIPCC_BIN_DIR}/hipcc.bat DESTINATION bin)" "" \
-      --replace "install(PROGRAMS \''${HIPCC_BIN_DIR}/hipconfig.bat DESTINATION bin)" ""
+      --replace-fail "install(PROGRAMS \''${HIPCC_BIN_DIR}/hipcc.bat DESTINATION bin)" "" \
+      --replace-fail "install(PROGRAMS \''${HIPCC_BIN_DIR}/hipconfig.bat DESTINATION bin)" ""
 
     substituteInPlace hipamd/src/hip_embed_pch.sh \
-      --replace "\''$LLVM_DIR/bin/clang" "${clang}/bin/clang"
+      --replace-fail "\''$LLVM_DIR/bin/clang" "${clang}/bin/clang"
 
     # https://lists.debian.org/debian-ai/2024/02/msg00178.html
     substituteInPlace rocclr/utils/flags.hpp \
@@ -169,6 +167,10 @@ in stdenv.mkDerivation (finalAttrs: {
     echo "${finalAttrs.version}" > $out/.info/version
   '';
 
+  postFixup = ''
+    wrapProgram $out/bin/roc-obj-ls  --prefix PERL5LIB : "${with perlPackages; makePerlPath [FileWhich URI]}"
+  '';
+
   passthru = {
     # All known and valid general GPU targets
     # We cannot use this for each ROCm library, as each defines their own supported targets
@@ -185,6 +187,7 @@ in stdenv.mkDerivation (finalAttrs: {
       "1010"
       "1012"
       "1030"
+      "1031"
       "1100"
       "1101"
       "1102"
@@ -215,6 +218,6 @@ in stdenv.mkDerivation (finalAttrs: {
     license = with licenses; [ mit ];
     maintainers = with maintainers; [ lovesegfault ] ++ teams.rocm.members;
     platforms = platforms.linux;
-    broken = versions.minor finalAttrs.version != versions.minor stdenv.cc.version || versionAtLeast finalAttrs.version "7.0.0";
+    # broken = versions.minor finalAttrs.version != versions.minor stdenv.cc.version || versionAtLeast finalAttrs.version "7.0.0";
   };
 })
