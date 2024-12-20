@@ -34,6 +34,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   postInstall = ''
     patchShebangs $out/bin
+    chmod a+x $out/bin/hipify-perl
   '';
 
   meta = with lib; {

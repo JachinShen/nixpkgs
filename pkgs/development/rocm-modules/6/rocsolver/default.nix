@@ -14,7 +14,7 @@
 , lapack-reference
 , buildTests ? false
 , buildBenchmarks ? false
-, gpuTargets ? [ ] # gpuTargets = [ "gfx803" "gfx900" "gfx906:xnack-" ]
+, gpuTargets ? [ "gfx1030" ] # gpuTargets = [ "gfx803" "gfx900" "gfx906:xnack-" ]
 }:
 
 stdenv.mkDerivation (finalAttrs: {

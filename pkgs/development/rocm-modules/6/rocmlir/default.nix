@@ -27,10 +27,10 @@ let
     then "-rock"
     else "";
 
-  llvmNativeTarget =
-    if stdenv.hostPlatform.isx86_64 then "X86"
-    else if stdenv.hostPlatform.isAarch64 then "AArch64"
-    else throw "Unsupported ROCm LLVM platform";
+  # llvmNativeTarget =
+  #   if stdenv.hostPlatform.isx86_64 then "X86"
+  #   else if stdenv.hostPlatform.isAarch64 then "AArch64"
+  #   else throw "Unsupported ROCm LLVM platform";
 in stdenv.mkDerivation (finalAttrs: {
   pname = "rocmlir${suffix}";
   version = "6.2.2";
@@ -51,7 +51,7 @@ in stdenv.mkDerivation (finalAttrs: {
   nativeBuildInputs = [
     cmake
     rocm-cmake
-    ninja
+    # ninja
     clr
     python3Packages.python
     python3Packages.tomli
@@ -70,10 +70,12 @@ in stdenv.mkDerivation (finalAttrs: {
   ];
 
   cmakeFlags = [
-    "-DLLVM_TARGETS_TO_BUILD=AMDGPU;${llvmNativeTarget}"
+    "-DLLVM_TARGETS_TO_BUILD=AMDGPU"
+    "-DLLVM_PARALLEL_LINK_JOBS=1"
     "-DLLVM_ENABLE_ZSTD=ON"
     "-DLLVM_ENABLE_ZLIB=ON"
     "-DLLVM_ENABLE_TERMINFO=ON"
+    "-DLLVM_BUILD_LIBRARY_DIR=/build/source/build/external/llvm-project/llvm/lib"
     "-DROCM_PATH=${clr}"
     # Manually define CMAKE_INSTALL_<DIR>
     # See: https://github.com/NixOS/nixpkgs/pull/197838
@@ -86,7 +88,10 @@ in stdenv.mkDerivation (finalAttrs: {
     "-DROCM_TEST_CHIPSET=gfx000"
   ];
 
-  patches = [ ./cmake.patch ];
+  patches = [
+    ./cmake.patch
+    # ./librockcompiler.patch
+  ];
 
   postPatch = ''
     patchShebangs mlir
@@ -118,6 +123,10 @@ in stdenv.mkDerivation (finalAttrs: {
     patchelf --set-rpath $external/lib:$out/lib:${libPath} $external/lib/*.so*
     patchelf --set-rpath $out/lib:$external/lib:${libPath} $out/{bin/*,lib/*.so*}
   '';
+  # in ''
+  #   mkdir -p $out/external/
+  #   cp -ar external/llvm-project/llvm/{lib,include,bin} $out/external/
+  # '';
 
   passthru.updateScript = rocmUpdateScript {
     name = finalAttrs.pname;
@@ -126,6 +135,9 @@ in stdenv.mkDerivation (finalAttrs: {
     page = "tags?per_page=2";
     filter = ".[1].name | split(\"-\") | .[1]";
   };
+
+  # dontStrip = true;
+  # dontShrinkrpath = true;
 
   meta = with lib; {
     description = "MLIR-based convolution and GEMM kernel generator";

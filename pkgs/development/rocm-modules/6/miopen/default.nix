@@ -6,6 +6,7 @@
 , runCommand
 , pkg-config
 , cmake
+, llvm
 , rocm-cmake
 , rocblas
 , rocmlir
@@ -108,6 +109,7 @@ in stdenv.mkDerivation (finalAttrs: {
 
   # Find zstd and add to target. Mainly for torch.
   patches = [
+    # ./fix-gemm-ex3.patch
     (fetchpatch {
       url = "https://github.com/ROCm/MIOpen/commit/e608b4325646afeabb5e52846997b926d2019d19.patch";
       hash = "sha256-oxa3qlIC2bzbwGxrQOZXoY/S7CpLsMrnWRB7Og0tk0M=";
@@ -136,6 +138,7 @@ in stdenv.mkDerivation (finalAttrs: {
     cmake
     rocm-cmake
     clr
+    llvm
     clang-tools-extra
   ];
 
@@ -169,6 +172,8 @@ in stdenv.mkDerivation (finalAttrs: {
     "-DUNZIPPER=${bzip2}/bin/bunzip2"
     "-DMIOPEN_OFFLOADBUNDLER_BIN=${stdenv.cc.cc}/bin/clang-offload-bundler"
     "-DMIOPEN_USE_SQLITE_PERFDB=ON"
+    # "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--no-undefined -Wl,--undefined-error"
+    # "-DCMAKE_PREFIX_PATH=${rocmlir}/lib/cmake"
     # Manually define CMAKE_INSTALL_<DIR>
     # See: https://github.com/NixOS/nixpkgs/pull/197838
     "-DCMAKE_INSTALL_BINDIR=bin"

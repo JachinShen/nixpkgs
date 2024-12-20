@@ -36,6 +36,7 @@ buildPythonPackage rec {
   ];
 
   patches = [
+    # ./debug.patch
     (fetchpatch {
       name = "Extend-Tensile-HIP-ISA-compatibility.patch";
       url = "https://github.com/GZGavinZhao/Tensile/commit/855cb15839849addb0816a6dde45772034a3e41f.patch";

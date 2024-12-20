@@ -1,0 +1,16 @@
+diff --git a/mlir/tools/rocmlir-lib/librockcompiler_deps.cmake b/mlir/tools/rocmlir-lib/librockcompiler_deps.cmake
+index c658a99..41c5c80 100644
+--- a/mlir/tools/rocmlir-lib/librockcompiler_deps.cmake
++++ b/mlir/tools/rocmlir-lib/librockcompiler_deps.cmake
+@@ -7,6 +7,11 @@ LLVMAMDGPUDesc
+ LLVMAMDGPUDisassembler
+ LLVMAMDGPUInfo
+ LLVMAMDGPUUtils
++LLVMX86AsmParser
++LLVMX86CodeGen
++LLVMX86Desc
++LLVMX86Disassembler
++LLVMX86Info
+ LLVMAggressiveInstCombine
+ LLVMAnalysis
+ LLVMAsmParser

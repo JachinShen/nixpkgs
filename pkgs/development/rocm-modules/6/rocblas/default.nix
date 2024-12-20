@@ -6,20 +6,24 @@
 , cmake
 , git
 , rocm-cmake
+# , rocm-smi
 , clr
 , python3
 , tensile
 , msgpack
 , libxml2
 , gtest
+# , openblas
+# , gdb
+# , diffutils
 , gfortran
 , openmp
 , amd-blis
 , python3Packages
-, buildTensile ? false
+, buildTensile ? true
 , buildTests ? false
 , buildBenchmarks ? false
-, tensileLogic ? "asm_full"
+, tensileLogic ? "asm_ci"
 , tensileCOVersion ? "default"
 # https://github.com/ROCm/Tensile/issues/1757
 # Allows gfx101* users to use rocBLAS normally.
@@ -37,7 +41,8 @@
 # would force all `gfx101*` GPUs to run as `gfx1010`, so `gfx101*` GPUs will
 # always try to use `gfx1010` code objects, hence building for `gfx1012` is
 # useless: https://github.com/NixOS/nixpkgs/pull/298388#issuecomment-2076327152
-, gpuTargets ? [ "gfx900;gfx906:xnack-;gfx908:xnack-;gfx90a:xnack+;gfx90a:xnack-;gfx942;gfx1010;gfx1030;gfx1100;gfx1101;gfx1102" ]
+# , gpuTargets ? [ "gfx900;gfx906:xnack-;gfx908:xnack-;gfx90a:xnack+;gfx90a:xnack-;gfx942;gfx1010;gfx1030;gfx1100;gfx1101;gfx1102" ]
+, gpuTargets ? [ "gfx1030" ]
 }:
 
 stdenv.mkDerivation (finalAttrs: {
@@ -63,7 +68,10 @@ stdenv.mkDerivation (finalAttrs: {
     cmake
     git
     rocm-cmake
+    # rocm-smi
     clr
+    # gdb
+    # diffutils
   ] ++ lib.optionals buildTensile [
     tensile
   ];
@@ -75,6 +83,12 @@ stdenv.mkDerivation (finalAttrs: {
     libxml2
     python3Packages.msgpack
     python3Packages.joblib
+    # gtest
+    # openblas
+    # gfortran
+    # gfortran.cc
+    # openmp
+    # amd-blis
   ] ++ lib.optionals buildTests [
     gtest
   ] ++ lib.optionals (buildTests || buildBenchmarks) [
@@ -90,6 +104,7 @@ stdenv.mkDerivation (finalAttrs: {
     (lib.cmakeFeature "CMAKE_CXX_COMPILER" "hipcc")
     (lib.cmakeFeature "python" "python3")
     (lib.cmakeFeature "AMDGPU_TARGETS" (lib.concatStringsSep ";" gpuTargets))
+    (lib.cmakeFeature "GPU_TARGETS" (lib.concatStringsSep ";" gpuTargets))
     (lib.cmakeBool "BUILD_WITH_TENSILE" buildTensile)
     (lib.cmakeBool "ROCM_SYMLINK_LIBS" false)
     (lib.cmakeFeature "ROCBLAS_TENSILE_LIBRARY_DIR" "lib/rocblas")
@@ -97,6 +112,7 @@ stdenv.mkDerivation (finalAttrs: {
     (lib.cmakeBool "BUILD_CLIENTS_BENCHMARKS" buildBenchmarks)
     # rocblas header files are not installed unless we set this
     (lib.cmakeFeature "CMAKE_INSTALL_INCLUDEDIR" "include")
+    (lib.cmakeFeature "ROCM_PLATFORM_VERSION" "6.2.2")
   ] ++ lib.optionals buildTensile [
     (lib.cmakeBool "BUILD_WITH_PIP" false)
     (lib.cmakeFeature "Tensile_LOGIC" tensileLogic)
@@ -109,7 +125,10 @@ stdenv.mkDerivation (finalAttrs: {
     (lib.cmakeFeature "CMAKE_CXX_FLAGS" "-I${amd-blis}/include/blis")
   ];
 
+  env."TENSILE_ROCM_ASSEMBLER_PATH"="clang-18";
+
   patches = [
+    ./fix-fp16.patch
     (fetchpatch {
       name = "Extend-rocBLAS-HIP-ISA-compatibility.patch";
       url = "https://github.com/GZGavinZhao/rocBLAS/commit/89b75ff9cc731f71f370fad90517395e117b03bb.patch";
