@@ -1,22 +1,21 @@
-{
-  lib,
-  stdenv,
-  fetchFromGitHub,
-  rocmUpdateScript,
-  cmake,
-  rocm-cmake,
-  rocm-device-libs,
+{ lib
+, stdenv
+, fetchFromGitHub
+, rocmUpdateScript
+, cmake
+, rocm-cmake
+, rocm-device-libs
 }:
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "clang-ocl";
-  version = "6.0.2";
+  version = "6.1.2";
 
   src = fetchFromGitHub {
     owner = "ROCm";
     repo = "clang-ocl";
     rev = "rocm-${finalAttrs.version}";
-    hash = "sha256-uMSvcVJj+me2E+7FsXZ4l4hTcK6uKEegXpkHGcuist0=";
+    hash = "sha256-rf40IXxJH6ZppgIXLOtvwj/B26as3CjlopS/Qx7exJ8=";
   };
 
   nativeBuildInputs = [
@@ -38,8 +37,6 @@ stdenv.mkDerivation (finalAttrs: {
     license = with licenses; [ mit ];
     maintainers = teams.rocm.members;
     platforms = platforms.linux;
-    broken =
-      versions.minor finalAttrs.version != versions.minor stdenv.cc.version
-      || versionAtLeast finalAttrs.version "7.0.0";
+    broken = versions.minor finalAttrs.version != versions.minor stdenv.cc.version || versionAtLeast finalAttrs.version "7.0.0";
   };
 })

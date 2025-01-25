@@ -1,0 +1,15 @@
+diff --git a/amd/hipcc/bin/hipcc.pl b/amd/hipcc/bin/hipcc.pl
+index c284178..9320bab 100755
+--- a/amd/hipcc/bin/hipcc.pl
++++ b/amd/hipcc/bin/hipcc.pl
+@@ -208,8 +208,8 @@ if ($HIP_PLATFORM eq "amd") {
+ 
+     $HIPCC=get_normalized_path("$CUDA_PATH/bin/nvcc");
+     $HIPCXXFLAGS .= " -Wno-deprecated-gpu-targets ";
+-    $HIPCXXFLAGS .= " -isystem " . get_normalized_path("$CUDA_PATH/include");
+-    $HIPCFLAGS .= " -isystem " . get_normalized_path("$CUDA_PATH/include");
++    $HIPCXXFLAGS .= " -I" . get_normalized_path("$CUDA_PATH/include");
++    $HIPCFLAGS .= " -I" . get_normalized_path("$CUDA_PATH/include");
+ 
+     $HIPLDFLAGS = " -Wno-deprecated-gpu-targets -lcuda -lcudart -L" . get_normalized_path("$CUDA_PATH/lib64");
+ } else {

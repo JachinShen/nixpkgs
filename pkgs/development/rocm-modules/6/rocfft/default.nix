@@ -1,32 +1,30 @@
-{
-  rocfft,
-  lib,
-  stdenv,
-  fetchFromGitHub,
-  rocmUpdateScript,
-  cmake,
-  clr,
-  python3,
-  rocm-cmake,
-  sqlite,
-  boost,
-  fftw,
-  fftwFloat,
-  gtest,
-  openmp,
-  rocrand,
-  gpuTargets ? [ ],
+{ lib
+, stdenv
+, fetchFromGitHub
+, rocmUpdateScript
+, cmake
+, clr
+, python3
+, rocm-cmake
+, sqlite
+, boost
+, fftw
+, fftwFloat
+, gtest
+, openmp
+, rocrand
+, gpuTargets ? [ ]
 }:
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "rocfft";
-  version = "6.0.2";
+  version = "6.3.1";
 
   src = fetchFromGitHub {
     owner = "ROCm";
     repo = "rocFFT";
     rev = "rocm-${finalAttrs.version}";
-    hash = "sha256-6Gjsy14GeR08VqnNmFhu8EyYDnQ+VZRlg+u9MAAWfHc=";
+    hash = "sha256-RrxdwZ64uC7lQzyJI1eGHX2dmRnW8TfNThnuvuz5XWo=";
   };
 
   nativeBuildInputs = [
@@ -38,20 +36,19 @@ stdenv.mkDerivation (finalAttrs: {
 
   buildInputs = [ sqlite ];
 
-  cmakeFlags =
-    [
-      "-DCMAKE_C_COMPILER=hipcc"
-      "-DCMAKE_CXX_COMPILER=hipcc"
-      "-DSQLITE_USE_SYSTEM_PACKAGE=ON"
-      # Manually define CMAKE_INSTALL_<DIR>
-      # See: https://github.com/NixOS/nixpkgs/pull/197838
-      "-DCMAKE_INSTALL_BINDIR=bin"
-      "-DCMAKE_INSTALL_LIBDIR=lib"
-      "-DCMAKE_INSTALL_INCLUDEDIR=include"
-    ]
-    ++ lib.optionals (gpuTargets != [ ]) [
-      "-DAMDGPU_TARGETS=${lib.concatStringsSep ";" gpuTargets}"
-    ];
+  cmakeFlags = [
+    "-DCMAKE_C_COMPILER=hipcc"
+    "-DCMAKE_CXX_COMPILER=hipcc"
+    "-DSQLITE_USE_SYSTEM_PACKAGE=ON"
+    # Manually define CMAKE_INSTALL_<DIR>
+    # See: https://github.com/NixOS/nixpkgs/pull/197838
+    "-DCMAKE_INSTALL_BINDIR=bin"
+    "-DCMAKE_INSTALL_LIBDIR=lib"
+    "-DCMAKE_INSTALL_INCLUDEDIR=include"
+    "-DROCFFT_KERNEL_CACHE_ENABLE=OFF"
+  ] ++ lib.optionals (gpuTargets != [ ]) [
+    "-DAMDGPU_TARGETS=${lib.concatStringsSep ";" gpuTargets}"
+  ];
 
   passthru = {
     test = stdenv.mkDerivation {
@@ -103,12 +100,10 @@ stdenv.mkDerivation (finalAttrs: {
         boost
         finalAttrs.finalPackage
         openmp
-        (python3.withPackages (
-          ps: with ps; [
-            pandas
-            scipy
-          ]
-        ))
+        (python3.withPackages (ps: with ps; [
+          pandas
+          scipy
+        ]))
         rocrand
       ];
 
@@ -169,8 +164,6 @@ stdenv.mkDerivation (finalAttrs: {
     license = with licenses; [ mit ];
     maintainers = with maintainers; [ kira-bruneau ] ++ teams.rocm.members;
     platforms = platforms.linux;
-    broken =
-      versions.minor finalAttrs.version != versions.minor stdenv.cc.version
-      || versionAtLeast finalAttrs.version "7.0.0";
+    broken = versions.minor finalAttrs.version != versions.minor stdenv.cc.version || versionAtLeast finalAttrs.version "7.0.0";
   };
 })

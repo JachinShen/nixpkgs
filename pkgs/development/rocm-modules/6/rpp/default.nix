@@ -1,53 +1,45 @@
-{
-  lib,
-  stdenv,
-  fetchFromGitHub,
-  rocmUpdateScript,
-  cmake,
-  rocm-cmake,
-  rocm-docs-core,
-  half,
-  clr,
-  openmp,
-  boost,
-  python3Packages,
-  buildDocs ? false, # Needs internet
-  useOpenCL ? false,
-  useCPU ? false,
-  gpuTargets ? [ ],
+{ lib
+, stdenv
+, fetchFromGitHub
+, rocmUpdateScript
+, cmake
+, rocm-cmake
+, rocm-docs-core
+, half
+, clr
+, openmp
+, boost
+, python3Packages
+, buildDocs ? false # Needs internet
+, useOpenCL ? false
+, useCPU ? false
+, gpuTargets ? [ ]
 }:
 
 stdenv.mkDerivation (finalAttrs: {
-  pname =
-    "rpp-"
-    + (
-      if (!useOpenCL && !useCPU) then
-        "hip"
-      else if (!useOpenCL && !useCPU) then
-        "opencl"
-      else
-        "cpu"
-    );
+  pname = "rpp-" + (
+    if (!useOpenCL && !useCPU) then "hip"
+    else if (!useOpenCL && !useCPU) then "opencl"
+    else "cpu"
+  );
 
-  version = "6.0.2";
+  version = "6.2.2";
 
   src = fetchFromGitHub {
     owner = "ROCm";
     repo = "rpp";
     rev = "rocm-${finalAttrs.version}";
-    hash = "sha256-AquAVoEqlsBVxd41hG2sVo9UoSS+255eCQzIfGkC/Tk=";
+    hash = "sha256-7/4qW+K3Y4xmu1uZDeXMKbEK1KqwN6z1ISIRkUoOVLA=";
   };
 
-  nativeBuildInputs =
-    [
-      cmake
-      rocm-cmake
-      clr
-    ]
-    ++ lib.optionals buildDocs [
-      rocm-docs-core
-      python3Packages.python
-    ];
+  nativeBuildInputs = [
+    cmake
+    rocm-cmake
+    clr
+  ] ++ lib.optionals buildDocs [
+    rocm-docs-core
+    python3Packages.python
+  ];
 
   buildInputs = [
     half
@@ -55,24 +47,19 @@ stdenv.mkDerivation (finalAttrs: {
     boost
   ];
 
-  cmakeFlags =
-    [
-      "-DROCM_PATH=${clr}"
-    ]
-    ++ lib.optionals (gpuTargets != [ ]) [
-      "-DAMDGPU_TARGETS=${lib.concatStringsSep ";" gpuTargets}"
-    ]
-    ++ lib.optionals (!useOpenCL && !useCPU) [
-      "-DCMAKE_C_COMPILER=hipcc"
-      "-DCMAKE_CXX_COMPILER=hipcc"
-      "-DBACKEND=HIP"
-    ]
-    ++ lib.optionals (useOpenCL && !useCPU) [
-      "-DBACKEND=OCL"
-    ]
-    ++ lib.optionals useCPU [
-      "-DBACKEND=CPU"
-    ];
+  cmakeFlags = [
+    "-DROCM_PATH=${clr}"
+  ] ++ lib.optionals (gpuTargets != [ ]) [
+    "-DAMDGPU_TARGETS=${lib.concatStringsSep ";" gpuTargets}"
+  ] ++ lib.optionals (!useOpenCL && !useCPU) [
+    "-DCMAKE_C_COMPILER=hipcc"
+    "-DCMAKE_CXX_COMPILER=hipcc"
+    "-DBACKEND=HIP"
+  ] ++ lib.optionals (useOpenCL && !useCPU) [
+    "-DBACKEND=OCL"
+  ] ++ lib.optionals useCPU [
+    "-DBACKEND=CPU"
+  ];
 
   postPatch = lib.optionalString (!useOpenCL && !useCPU) ''
     # Bad path
@@ -96,8 +83,6 @@ stdenv.mkDerivation (finalAttrs: {
     license = with licenses; [ mit ];
     maintainers = teams.rocm.members;
     platforms = platforms.linux;
-    broken =
-      versions.minor finalAttrs.version != versions.minor stdenv.cc.version
-      || versionAtLeast finalAttrs.version "7.0.0";
+    broken = versions.minor finalAttrs.version != versions.minor stdenv.cc.version || versionAtLeast finalAttrs.version "7.0.0";
   };
 })

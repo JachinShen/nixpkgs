@@ -1,8 +1,7 @@
-{
-  stdenv,
-  callPackage,
-  rocmUpdateScript,
-  llvm,
+{ stdenv
+, callPackage
+, rocmUpdateScript
+, llvm
 }:
 
 callPackage ../base.nix rec {
@@ -12,8 +11,9 @@ callPackage ../base.nix rec {
   extraBuildInputs = [ llvm ];
 
   extraCMakeFlags = [
-    "-DCLANG_INCLUDE_DOCS=ON"
+    # "-DCLANG_INCLUDE_DOCS=ON"
     "-DCLANG_INCLUDE_TESTS=ON"
+    # "-DCLANG_DEFAULT_LINKER=lld"
   ];
 
   extraPostPatch = ''
@@ -37,7 +37,7 @@ callPackage ../base.nix rec {
     rm test/Interpreter/dynamic-library.cpp
 
     # `fatal error: 'stdio.h' file not found`
-    rm test/OpenMP/amdgcn_emit_llvm.c
+    # rm test/OpenMP/amdgcn_emit_llvm.c
   '';
 
   extraPostInstall = ''

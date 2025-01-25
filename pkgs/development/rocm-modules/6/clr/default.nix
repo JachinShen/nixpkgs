@@ -1,28 +1,30 @@
-{
-  lib,
-  stdenv,
-  callPackage,
-  fetchFromGitHub,
-  fetchpatch,
-  fetchurl,
-  rocmUpdateScript,
-  makeWrapper,
-  cmake,
-  perl,
-  clang,
-  hip-common,
-  hipcc,
-  rocm-device-libs,
-  rocm-comgr,
-  rocm-runtime,
-  roctracer,
-  rocminfo,
-  rocm-smi,
-  numactl,
-  libGL,
-  libxml2,
-  libX11,
-  python3Packages,
+{ lib
+, stdenv
+, callPackage
+, fetchFromGitHub
+, fetchpatch
+, fetchurl
+, rocmUpdateScript
+, makeWrapper
+, cmake
+, perl
+, clang
+, rocm-core
+, hip-common
+, hipcc
+, rocm-device-libs
+, rocm-comgr
+, rocm-runtime
+, roctracer
+, rocminfo
+, rocm-smi
+, rocprofiler-register
+, numactl
+, libGL
+, libedit
+, libxml2
+, libX11
+, python3Packages
 }:
 
 let
@@ -37,19 +39,9 @@ let
     "--set ROCM_PATH $out"
   ];
 
-  # https://github.com/NixOS/nixpkgs/issues/305641
-  # Not needed when 3.29.2 is in unstable
-  cmake' = cmake.overrideAttrs (old: rec {
-    version = "3.29.2";
-    src = fetchurl {
-      url = "https://cmake.org/files/v${lib.versions.majorMinor version}/cmake-${version}.tar.gz";
-      hash = "sha256-NttLaSaqt0G6bksuotmckZMiITIwi03IJNQSPLcwNS4=";
-    };
-  });
-in
-stdenv.mkDerivation (finalAttrs: {
+in stdenv.mkDerivation (finalAttrs: {
   pname = "clr";
-  version = "6.0.2";
+  version = "6.3.1";
 
   outputs = [
     "out"
@@ -60,12 +52,12 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "ROCm";
     repo = "clr";
     rev = "rocm-${finalAttrs.version}";
-    hash = "sha256-ZMpA7vCW2CcpGdBLZfPimMHcgjhN1PHuewJiYwZMgGY=";
+    hash = "sha256-wo3kwk6HQJsP+ycaVh2mmMjEgGlj/Z6KXNXOXbJ1KLs=";
   };
 
   nativeBuildInputs = [
     makeWrapper
-    cmake'
+    cmake
     perl
     python3Packages.python
     python3Packages.cppheaderparser
@@ -74,6 +66,7 @@ stdenv.mkDerivation (finalAttrs: {
   buildInputs = [
     numactl
     libGL
+    libedit
     libxml2
     libX11
   ];
@@ -83,17 +76,21 @@ stdenv.mkDerivation (finalAttrs: {
     rocm-comgr
     rocm-runtime
     rocminfo
+    rocprofiler-register
   ];
 
   cmakeFlags = [
     "-DCMAKE_POLICY_DEFAULT_CMP0072=NEW" # Prefer newer OpenGL libraries
     "-DCLR_BUILD_HIP=ON"
-    "-DCLR_BUILD_OCL=ON"
+    "-DCLR_BUILD_OCL=OFF"
     "-DHIP_COMMON_DIR=${hip-common}"
     "-DHIPCC_BIN_DIR=${hipcc}/bin"
     "-DHIP_PLATFORM=amd"
     "-DPROF_API_HEADER_PATH=${roctracer.src}/inc/ext"
     "-DROCM_PATH=${rocminfo}"
+    # "-D__HIP_ENABLE_PCH=OFF"
+    # "-DUSE_COMGR_LIBRARY=ON"
+    "-DHIP_OFFICIAL_BUILD=ON"
 
     # Temporarily set variables to work around upstream CMakeLists issue
     # Can be removed once https://github.com/ROCm/rocm-cmake/issues/121 is fixed
@@ -102,40 +99,43 @@ stdenv.mkDerivation (finalAttrs: {
     "-DCMAKE_INSTALL_LIBDIR=lib"
   ];
 
+  dontStrip = true;
+
   patches = [
-    (fetchpatch {
-      name = "add-missing-operators.patch";
-      url = "https://github.com/ROCm/clr/commit/86bd518981b364c138f9901b28a529899d8654f3.patch";
-      hash = "sha256-lbswri+zKLxif0hPp4aeJDeVfadhWZz4z+m+G2XcCPI=";
-    })
-    (fetchpatch {
-      name = "static-functions.patch";
-      url = "https://github.com/ROCm/clr/commit/77c581a3ebd47b5e2908973b70adea66891159ee.patch";
-      hash = "sha256-auBedbd7rghlKav7A9V6l64J7VmtE9GizIdi5gWj+fs=";
-    })
-    (fetchpatch {
-      name = "extend-hip-isa-compatibility-check.patch";
-      url = "https://salsa.debian.org/rocm-team/rocm-hipamd/-/raw/d6d20142c37e1dff820950b16ff8f0523241d935/debian/patches/0026-extend-hip-isa-compatibility-check.patch";
-      hash = "sha256-eG0ALZZQLRzD7zJueJFhi2emontmYy6xx8Rsm346nQI=";
-    })
-    (fetchpatch {
-      name = "improve-rocclr-isa-compatibility-check.patch";
-      url = "https://salsa.debian.org/rocm-team/rocm-hipamd/-/raw/d6d20142c37e1dff820950b16ff8f0523241d935/debian/patches/0025-improve-rocclr-isa-compatibility-check.patch";
-      hash = "sha256-8eowuRiOAdd9ucKv4Eg9FPU7c6367H3eP3fRAGfXc6Y=";
-    })
+    # (fetchpatch {
+    #   name = "add-missing-operators.patch";
+    #   url = "https://github.com/ROCm/clr/commit/86bd518981b364c138f9901b28a529899d8654f3.patch";
+    #   hash = "sha256-lbswri+zKLxif0hPp4aeJDeVfadhWZz4z+m+G2XcCPI=";
+    # })
+    # (fetchpatch {
+    #   name = "static-functions.patch";
+    #   url = "https://github.com/ROCm/clr/commit/77c581a3ebd47b5e2908973b70adea66891159ee.patch";
+    #   hash = "sha256-auBedbd7rghlKav7A9V6l64J7VmtE9GizIdi5gWj+fs=";
+    # })
+    # (fetchpatch {
+    #   name = "extend-hip-isa-compatibility-check.patch";
+    #   url = "https://salsa.debian.org/rocm-team/rocm-hipamd/-/raw/d6d20142c37e1dff820950b16ff8f0523241d935/debian/patches/0026-extend-hip-isa-compatibility-check.patch";
+    #   hash = "sha256-eG0ALZZQLRzD7zJueJFhi2emontmYy6xx8Rsm346nQI=";
+    # })
+    ./fix-magic-compare.patch
+    # ./0026-extend-hip-isa-compatibility-check.patch
+    # (fetchpatch {
+    #   name = "improve-rocclr-isa-compatibility-check.patch";
+    #   url = "https://salsa.debian.org/rocm-team/rocm-hipamd/-/raw/d6d20142c37e1dff820950b16ff8f0523241d935/debian/patches/0025-improve-rocclr-isa-compatibility-check.patch";
+    #   hash = "sha256-8eowuRiOAdd9ucKv4Eg9FPU7c6367H3eP3fRAGfXc6Y=";
+    # })
   ];
 
   postPatch = ''
-    patchShebangs hipamd/*.sh
-    patchShebangs hipamd/src
+    patchShebangs hipamd/src/*.sh
 
     # We're not on Windows so these are never installed to hipcc...
     substituteInPlace hipamd/CMakeLists.txt \
-      --replace "install(PROGRAMS \''${HIPCC_BIN_DIR}/hipcc.bat DESTINATION bin)" "" \
-      --replace "install(PROGRAMS \''${HIPCC_BIN_DIR}/hipconfig.bat DESTINATION bin)" ""
+      --replace-fail "install(PROGRAMS \''${HIPCC_BIN_DIR}/hipcc.bat DESTINATION bin)" "" \
+      --replace-fail "install(PROGRAMS \''${HIPCC_BIN_DIR}/hipconfig.bat DESTINATION bin)" ""
 
     substituteInPlace hipamd/src/hip_embed_pch.sh \
-      --replace "\''$LLVM_DIR/bin/clang" "${clang}/bin/clang"
+      --replace-fail "\''$LLVM_DIR/bin/clang" "${clang}/bin/clang"
 
     # https://lists.debian.org/debian-ai/2024/02/msg00178.html
     substituteInPlace rocclr/utils/flags.hpp \
@@ -150,10 +150,10 @@ stdenv.mkDerivation (finalAttrs: {
     patchShebangs $out/bin
 
     # hipcc.bin and hipconfig.bin is mysteriously never installed
-    cp -a ${hipcc}/bin/{hipcc.bin,hipconfig.bin} $out/bin
+    cp -a ${hipcc}/bin/{hipcc,hipconfig} $out/bin
 
-    wrapProgram $out/bin/hipcc.bin ${lib.concatStringsSep " " wrapperArgs}
-    wrapProgram $out/bin/hipconfig.bin ${lib.concatStringsSep " " wrapperArgs}
+    wrapProgram $out/bin/hipcc ${lib.concatStringsSep " " wrapperArgs}
+    wrapProgram $out/bin/hipconfig ${lib.concatStringsSep " " wrapperArgs}
     wrapProgram $out/bin/hipcc.pl ${lib.concatStringsSep " " wrapperArgs}
     wrapProgram $out/bin/hipconfig.pl ${lib.concatStringsSep " " wrapperArgs}
 
@@ -165,29 +165,20 @@ stdenv.mkDerivation (finalAttrs: {
     echo "$out/lib/libamdocl64.so" > $icd/etc/OpenCL/vendors/amdocl64.icd
 
     # add version info to output (downstream rocmPackages look for this)
-    mkdir $out/.info
-    echo "${finalAttrs.version}" > $out/.info/version
+    ln -s ${rocm-core}/.info $out/.info
+
+    mkdir -p $out/llvm
+    ln -s ${clang}/bin $out/llvm/bin
   '';
 
   passthru = {
-    # All known and valid general GPU targets
-    # We cannot use this for each ROCm library, as each defines their own supported targets
-    # See: https://github.com/ROCm/ROCm/blob/77cbac4abab13046ee93d8b5bf410684caf91145/README.md#library-target-matrix
+    # See: https://rocm.docs.amd.com/en/docs-6.3.1/compatibility/compatibility-matrix.html
     gpuTargets = lib.forEach [
-      "803"
-      "900"
-      "906"
       "908"
       "90a"
-      "940"
-      "941"
       "942"
-      "1010"
-      "1012"
       "1030"
       "1100"
-      "1101"
-      "1102"
     ] (target: "gfx${target}");
 
     updateScript = rocmUpdateScript {
@@ -215,8 +206,6 @@ stdenv.mkDerivation (finalAttrs: {
     license = with licenses; [ mit ];
     maintainers = with maintainers; [ lovesegfault ] ++ teams.rocm.members;
     platforms = platforms.linux;
-    broken =
-      versions.minor finalAttrs.version != versions.minor stdenv.cc.version
-      || versionAtLeast finalAttrs.version "7.0.0";
+    broken = versions.minor finalAttrs.version != versions.minor stdenv.cc.version || versionAtLeast finalAttrs.version "7.0.0";
   };
 })

@@ -1,7 +1,6 @@
-{
-  fetchzip,
-  mirror1,
-  mirror2,
+{ fetchzip
+, mirror1
+, mirror2
 }:
 
 {

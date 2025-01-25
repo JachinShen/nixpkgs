@@ -1,0 +1,27 @@
+diff --git a/mlir/lib/Conversion/TosaToRock/CMakeLists.txt b/mlir/lib/Conversion/TosaToRock/CMakeLists.txt
+index ec003c7..8bf8d20 100644
+--- a/mlir/lib/Conversion/TosaToRock/CMakeLists.txt
++++ b/mlir/lib/Conversion/TosaToRock/CMakeLists.txt
+@@ -7,7 +7,9 @@ add_rocmlir_conversion_library(MLIRTosaToRock
+   ${MLIR_MAIN_INCLUDE_DIR}/mlir/IR
+ 
+   DEPENDS
++  MLIRRockPassIncGen
+   MLIRConversionPassIncGen
++  RocMLIRConversionPassIncGen
+ 
+   LINK_LIBS PUBLIC
+   MLIRIR
+diff --git a/mlir/lib/Dialect/Rock/Transforms/CMakeLists.txt b/mlir/lib/Dialect/Rock/Transforms/CMakeLists.txt
+index 9955acc..9972ee5 100644
+--- a/mlir/lib/Dialect/Rock/Transforms/CMakeLists.txt
++++ b/mlir/lib/Dialect/Rock/Transforms/CMakeLists.txt
+@@ -30,6 +30,8 @@ add_rocmlir_dialect_library(MLIRRockTransforms
+   DEPENDS
+   MLIRRockOpsIncGen
+   MLIRRockPassIncGen
++  MLIRConversionPassIncGen
++  RocMLIRConversionPassIncGen
+ 
+   LINK_LIBS PUBLIC
+   MLIRAffineTransforms

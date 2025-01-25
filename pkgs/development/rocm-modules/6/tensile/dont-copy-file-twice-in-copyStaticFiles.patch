@@ -1,0 +1,50 @@
+diff --git a/Tensile/TensileCreateLibrary.py b/Tensile/TensileCreateLibrary.py
+index a164460..0a703aa 100644
+--- a/Tensile/TensileCreateLibrary.py
++++ b/Tensile/TensileCreateLibrary.py
+@@ -31,6 +31,7 @@ if __name__ == "__main__":
+     exit(1)
+ 
+ import collections
++import filecmp
+ import itertools
+ import os
+ import re
+@@ -220,6 +221,7 @@ def splitArchs():
+ 
+ 
+ def buildSourceCodeObjectFile(CxxCompiler, outputPath, kernelFile):
++    CxxCompiler = "hipcc"
+     buildPath = ensurePath(os.path.join(globalParameters["WorkingPath"], "code_object_tmp"))
+     destDir = ensurePath(os.path.join(outputPath, "library"))
+     (_, filename) = os.path.split(kernelFile)
+@@ -841,6 +843,11 @@ def getKernelWriters(solutions: List[Solution], kernels: List[Solution]):
+ ################################################################################
+ # copy static cpp files and headers
+ ################################################################################
++def copy_once(src, outputPath):
++    dst = os.path.join(outputPath, os.path.basename(src))
++    if not os.path.isfile(dst) or not filecmp.cmp(src, dst):
++        shutil.copy(src, dst)
++
+ def copyStaticFiles(outputPath=None):
+     if outputPath is None:
+         outputPath = globalParameters["WorkingPath"]
+@@ -854,7 +861,7 @@ def copyStaticFiles(outputPath=None):
+ 
+     for fileName in libraryStaticFiles:
+         # copy file
+-        shutil.copy(os.path.join(globalParameters["SourcePath"], fileName), outputPath)
++        copy_once(os.path.join(globalParameters["SourcePath"], fileName), outputPath)
+ 
+     return libraryStaticFiles
+ 
+@@ -1762,7 +1769,7 @@ def TensileCreateLibrary():
+ 
+     # Make sure to copy the library static files.
+     for fileName in staticFiles:
+-        shutil.copy(os.path.join(globalParameters["SourcePath"], fileName), outputPath)
++        copy_once(os.path.join(globalParameters["SourcePath"], fileName), outputPath)
+ 
+     codeObjectFiles, kernels, solutions = writeKernels(
+         outputPath,

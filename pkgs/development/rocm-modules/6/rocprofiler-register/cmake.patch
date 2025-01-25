@@ -1,0 +1,46 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 30d1308..8b97c68 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -100,7 +100,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR
+ enable_testing()
+ include(CTest)
+ 
+-add_subdirectory(external)
++find_package(glog REQUIRED)
++find_package(fmt REQUIRED)
+ add_subdirectory(source)
+ 
+ include(rocprofiler_register_config_install)
+@@ -113,6 +114,4 @@ if(ROCPROFILER_REGISTER_BUILD_SAMPLES)
+     add_subdirectory(samples)
+ endif()
+ 
+-include(rocprofiler_register_config_packaging)
+-
+ rocprofiler_register_print_features()
+diff --git a/cmake/rocprofiler_register_config_interfaces.cmake b/cmake/rocprofiler_register_config_interfaces.cmake
+index 5f7a2e1..d1e6416 100644
+--- a/cmake/rocprofiler_register_config_interfaces.cmake
++++ b/cmake/rocprofiler_register_config_interfaces.cmake
+@@ -55,13 +55,13 @@ endforeach()
+ #
+ # ----------------------------------------------------------------------------------------#
+ 
+-find_library(stdcxxfs_LIBRARY NAMES stdc++fs)
+-find_package_handle_standard_args(stdcxxfs-library REQUIRED_VARS stdcxxfs_LIBRARY)
++# find_library(stdcxxfs_LIBRARY NAMES stdc++fs)
++# find_package_handle_standard_args(stdcxxfs-library REQUIRED_VARS stdcxxfs_LIBRARY)
+ 
+-if(stdcxxfs_LIBRARY)
+-    target_link_libraries(rocprofiler-register-stdcxxfs
+-                          INTERFACE $<BUILD_INTERFACE:${stdcxxfs_LIBRARY}>)
+-else()
++# if(stdcxxfs_LIBRARY)
++# target_link_libraries(rocprofiler-register-stdcxxfs
++# INTERFACE $<BUILD_INTERFACE:${stdcxxfs_LIBRARY}>)
++# else()
+     target_link_libraries(rocprofiler-register-stdcxxfs
+                           INTERFACE $<BUILD_INTERFACE:stdc++fs>)
+-endif()
++# endif()

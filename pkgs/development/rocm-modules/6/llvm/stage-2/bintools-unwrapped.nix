@@ -1,7 +1,6 @@
-{
-  runCommand,
-  llvm,
-  lld,
+{ runCommand
+, llvm
+, lld
 }:
 
 runCommand "rocm-llvm-binutils-${llvm.version}" { preferLocalBuild = true; } ''

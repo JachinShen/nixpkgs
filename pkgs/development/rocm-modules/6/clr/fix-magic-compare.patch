@@ -1,0 +1,33 @@
+diff --git a/hipamd/src/hip_code_object.cpp b/hipamd/src/hip_code_object.cpp
+index b2635c6..a939b34 100644
+--- a/hipamd/src/hip_code_object.cpp
++++ b/hipamd/src/hip_code_object.cpp
+@@ -509,7 +509,7 @@ hipError_t CodeObject::ExtractCodeObjectFromFile(
+   }
+ 
+   // retrieve code_objs{binary_image, binary_size} for devices
+-  return extractCodeObjectFromFatBinary(*image, device_names, code_objs);
++  return extractCodeObjectFromFatBinaryUsingComgr(*image, 0, device_names, code_objs);
+ }
+ 
+ // This will be moved to COMGR eventually
+@@ -521,15 +521,16 @@ hipError_t CodeObject::ExtractCodeObjectFromMemory(
+     return hipErrorInvalidValue;
+   }
+ 
+-  return extractCodeObjectFromFatBinary(data, device_names, code_objs);
++  return extractCodeObjectFromFatBinaryUsingComgr(data, 0, device_names, code_objs);
+ }
+ 
+ // This will be moved to COMGR eventually
+ hipError_t CodeObject::extractCodeObjectFromFatBinary(
+     const void* data, const std::vector<std::string>& agent_triple_target_ids,
+     std::vector<std::pair<const void*, size_t>>& code_objs) {
+-  std::string magic((const char*)data, kOffloadBundleUncompressedMagicStrSize);
+-  if (magic.compare(kOffloadBundleUncompressedMagicStr)) {
++  bool isCompressed = false;
++  if (!IsClangOffloadMagicBundle(data, isCompressed) || isCompressed) {
++    LogPrintfInfo("IsClangOffloadMagicBundle(%s) return false or isCompressed is true", (const char*)data);
+     return hipErrorInvalidKernelFile;
+   }
+ 

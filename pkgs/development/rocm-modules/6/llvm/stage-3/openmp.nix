@@ -1,34 +1,36 @@
-{
-  lib,
-  stdenv,
-  callPackage,
-  rocmUpdateScript,
-  llvm,
-  clang,
-  clang-unwrapped,
-  rocm-device-libs,
-  rocm-runtime,
-  rocm-thunk,
-  perl,
-  elfutils,
-  libdrm,
-  numactl,
-  lit,
+{ lib
+, stdenv
+, callPackage
+, rocmUpdateScript
+, llvm
+, clang
+, clang-unwrapped
+, device-libs
+, rocm-cmake
+, rocm-runtime
+, perl
+, elfutils
+, libdrm
+, numactl
+, lit
+, runtimes
 }:
 
 callPackage ../base.nix rec {
   inherit stdenv rocmUpdateScript;
   targetName = "openmp";
   targetDir = targetName;
+  buildTests = false; # TODO: Fix test. clang-linker-wrapper cannot find unwind
   extraNativeBuildInputs = [ perl ];
 
   extraBuildInputs = [
-    rocm-device-libs
+    device-libs
+    rocm-cmake
     rocm-runtime
-    rocm-thunk
     elfutils
     libdrm
     numactl
+    runtimes
   ];
 
   extraCMakeFlags = [
@@ -38,13 +40,12 @@ callPackage ../base.nix rec {
     "-DPACKAGER_TOOL=${clang-unwrapped}/bin/clang-offload-packager"
     "-DOPENMP_LLVM_TOOLS_DIR=${llvm}/bin"
     "-DOPENMP_LLVM_LIT_EXECUTABLE=${lit}/bin/.lit-wrapped"
-    "-DDEVICELIBS_ROOT=${rocm-device-libs.src}"
   ];
 
   extraPostPatch = ''
     # We can't build this target at the moment
     substituteInPlace libomptarget/DeviceRTL/CMakeLists.txt \
-      --replace "gfx1010" ""
+      --replace "gfx1152" ""
 
     # No idea what's going on here...
     cat ${./1000-openmp-failing-tests.list} | xargs -d \\n rm

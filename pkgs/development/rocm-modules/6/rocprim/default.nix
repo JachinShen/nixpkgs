@@ -8,14 +8,14 @@
 , clr
 , gtest
 , gbenchmark
-, buildTests ? false
+, buildTests ? true
 , buildBenchmarks ? false
 , gpuTargets ? [ ]
 }:
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "rocprim";
-  version = "6.0.2";
+  version = "6.3.1";
 
   outputs = [
     "out"
@@ -29,16 +29,16 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "ROCm";
     repo = "rocPRIM";
     rev = "rocm-${finalAttrs.version}";
-    hash = "sha256-nWvq26qRPZ6Au1rc5cR74TKArcdUFg7O9djFi8SvMeM=";
+    hash = "sha256-0aHxpBuYIYhI2UER45YhHHL5YcxA+XeXoihcUs2AmCo=";
   };
 
-  patches = [
-    (fetchpatch {
-      name = "arch-conversion-marco.patch";
-      url = "https://salsa.debian.org/rocm-team/rocprim/-/raw/70c8aaee3cf545d92685f4ed9bf8f41e3d4d570c/debian/patches/arch-conversion-macro.patch";
-      hash = "sha256-oXdmbCArOB5bKE8ozDFrSh4opbO+c4VI6PNhljeUSms=";
-    })
-  ];
+  # patches = [
+  #   (fetchpatch {
+  #     name = "arch-conversion-marco.patch";
+  #     url = "https://salsa.debian.org/rocm-team/rocprim/-/raw/70c8aaee3cf545d92685f4ed9bf8f41e3d4d570c/debian/patches/arch-conversion-macro.patch";
+  #     hash = "sha256-oXdmbCArOB5bKE8ozDFrSh4opbO+c4VI6PNhljeUSms=";
+  #   })
+  # ];
 
   nativeBuildInputs = [
     cmake

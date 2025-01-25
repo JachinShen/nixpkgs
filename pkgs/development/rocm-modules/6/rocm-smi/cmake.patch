@@ -1,8 +1,8 @@
 diff --git a/rocm_smi-backward-compat.cmake b/rocm_smi-backward-compat.cmake
-index aa8fd9c..59afce5 100644
+index d53542b..e37e819 100644
 --- a/rocm_smi-backward-compat.cmake
 +++ b/rocm_smi-backward-compat.cmake
-@@ -72,7 +72,12 @@ function(generate_wrapper_header)
+@@ -92,7 +92,12 @@ function(generate_wrapper_header)
      set(include_guard "${include_guard}COMGR_WRAPPER_INCLUDE_${INC_GAURD_NAME}_H")
      #set #include statement
      get_filename_component(file_name ${header_file} NAME)
@@ -16,7 +16,7 @@ index aa8fd9c..59afce5 100644
      configure_file(${RSMI_WRAPPER_DIR}/header.hpp.in ${RSMI_WRAPPER_INC_DIR}/${file_name})
      unset(include_guard)
      unset(include_statements)
-@@ -90,7 +95,12 @@ function(generate_wrapper_header)
+@@ -110,7 +115,12 @@ function(generate_wrapper_header)
      set(include_guard "${include_guard}COMGR_WRAPPER_INCLUDE_${INC_GAURD_NAME}_H")
      #set #include statement
      get_filename_component(file_name ${header_file} NAME)
@@ -30,7 +30,7 @@ index aa8fd9c..59afce5 100644
      configure_file(${RSMI_WRAPPER_DIR}/header.hpp.in ${OAM_WRAPPER_INC_DIR}/${file_name})
      unset(include_guard)
      unset(include_statements)
-@@ -123,11 +133,16 @@ function(create_library_symlink)
+@@ -143,11 +153,16 @@ function(create_library_symlink)
      set(library_files "${LIB_RSMI}")
    endif()
  
@@ -48,7 +48,7 @@ index aa8fd9c..59afce5 100644
    endforeach()
  
    file(MAKE_DIRECTORY ${OAM_WRAPPER_LIB_DIR})
-@@ -151,11 +166,16 @@ function(create_library_symlink)
+@@ -171,11 +186,16 @@ function(create_library_symlink)
      set(library_files "${LIB_OAM}")
    endif()
  
@@ -67,10 +67,10 @@ index aa8fd9c..59afce5 100644
  
  endfunction()
 diff --git a/rocm_smi/CMakeLists.txt b/rocm_smi/CMakeLists.txt
-index c594eeb..d3ed39d 100755
+index 523771e..36354ed 100644
 --- a/rocm_smi/CMakeLists.txt
 +++ b/rocm_smi/CMakeLists.txt
-@@ -105,10 +105,15 @@ endif ()
+@@ -116,10 +116,15 @@ endif ()
  #file reorganization changes
  #rocm_smi.py moved to libexec/rocm_smi. so creating rocm-smi symlink
  file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)

@@ -1,37 +1,35 @@
-{
-  lib,
-  stdenv,
-  fetchFromGitHub,
-  rocmUpdateScript,
-  cmake,
-  rocm-cmake,
-  rocm-smi,
-  clr,
-  perl,
-  hipify,
-  gtest,
-  chrpath,
-  buildTests ? false,
-  gpuTargets ? [ ],
+{ lib
+, stdenv
+, fetchFromGitHub
+, rocmUpdateScript
+, cmake
+, rocm-cmake
+, rocm-core
+, rocm-smi
+, clr
+, perl
+, hipify
+, gtest
+, chrpath
+, buildTests ? false
+, gpuTargets ? [ ]
 }:
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "rccl";
-  version = "6.0.2";
+  version = "6.3.1";
 
-  outputs =
-    [
-      "out"
-    ]
-    ++ lib.optionals buildTests [
-      "test"
-    ];
+  outputs = [
+    "out"
+  ] ++ lib.optionals buildTests [
+    "test"
+  ];
 
   src = fetchFromGitHub {
     owner = "ROCm";
     repo = "rccl";
     rev = "rocm-${finalAttrs.version}";
-    hash = "sha256-Oyml47yGEB7fALxBcDjqFngS38cnI39sDj94/JV7wE0=";
+    hash = "sha256-61yvFqloOO6qtn0H6XsAPvJ6LKlOeXgTD/xbjCuB3zQ=";
   };
 
   nativeBuildInputs = [
@@ -42,40 +40,36 @@ stdenv.mkDerivation (finalAttrs: {
     hipify
   ];
 
-  buildInputs =
-    [
-      rocm-smi
-      gtest
-    ]
-    ++ lib.optionals buildTests [
-      chrpath
-    ];
+  buildInputs = [
+    rocm-smi
+    rocm-core
+    gtest
+  ] ++ lib.optionals buildTests [
+    chrpath
+  ];
 
-  cmakeFlags =
-    [
-      "-DCMAKE_CXX_COMPILER=hipcc"
-      "-DBUILD_BFD=OFF" # Can't get it to detect bfd.h
-      # Manually define CMAKE_INSTALL_<DIR>
-      # See: https://github.com/NixOS/nixpkgs/pull/197838
-      "-DCMAKE_INSTALL_BINDIR=bin"
-      "-DCMAKE_INSTALL_LIBDIR=lib"
-      "-DCMAKE_INSTALL_INCLUDEDIR=include"
-    ]
-    ++ lib.optionals (gpuTargets != [ ]) [
-      "-DAMDGPU_TARGETS=${lib.concatStringsSep ";" gpuTargets}"
-    ]
-    ++ lib.optionals buildTests [
-      "-DBUILD_TESTS=ON"
-    ];
+  cmakeFlags = [
+    "-DCMAKE_CXX_COMPILER=${clr}/bin/hipcc"
+    "-DROCM_PATH=${clr}"
+    "-DBUILD_BFD=OFF" # Can't get it to detect bfd.h
+    "-DENABLE_MSCCLPP=OFF"
+    # Manually define CMAKE_INSTALL_<DIR>
+    # See: https://github.com/NixOS/nixpkgs/pull/197838
+    "-DCMAKE_INSTALL_BINDIR=bin"
+    "-DCMAKE_INSTALL_LIBDIR=lib"
+    "-DCMAKE_INSTALL_INCLUDEDIR=include"
+  ] ++ lib.optionals (gpuTargets != [ ]) [
+    "-DAMDGPU_TARGETS=${lib.concatStringsSep ";" gpuTargets}"
+  ] ++ lib.optionals buildTests [
+    "-DBUILD_TESTS=ON"
+  ];
 
   postPatch = ''
     patchShebangs src tools
 
     # Really strange behavior, `#!/usr/bin/env perl` should work...
     substituteInPlace CMakeLists.txt \
-      --replace "\''$ \''${hipify-perl_executable}" "${perl}/bin/perl ${hipify}/bin/hipify-perl" \
-      --replace-warn "-parallel-jobs=12" "-parallel-jobs=1" \
-      --replace-warn "-parallel-jobs=16" "-parallel-jobs=1"
+      --replace-fail "-parallel-jobs=12" "-parallel-jobs=1"
   '';
 
   postInstall = lib.optionalString buildTests ''
@@ -93,14 +87,9 @@ stdenv.mkDerivation (finalAttrs: {
   meta = with lib; {
     description = "ROCm communication collectives library";
     homepage = "https://github.com/ROCm/rccl";
-    license = with licenses; [
-      bsd2
-      bsd3
-    ];
+    license = with licenses; [ bsd2 bsd3 ];
     maintainers = teams.rocm.members;
     platforms = platforms.linux;
-    broken =
-      versions.minor finalAttrs.version != versions.minor stdenv.cc.version
-      || versionAtLeast finalAttrs.version "7.0.0";
+    broken = versions.minor finalAttrs.version != versions.minor stdenv.cc.version || versionAtLeast finalAttrs.version "7.0.0";
   };
 })

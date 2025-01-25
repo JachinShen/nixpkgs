@@ -37,7 +37,7 @@ let
   ]));
 in stdenv.mkDerivation (finalAttrs: {
   pname = "rocdbgapi";
-  version = "6.0.2";
+  version = "6.3.1";
 
   outputs = [
     "out"
@@ -49,7 +49,7 @@ in stdenv.mkDerivation (finalAttrs: {
     owner = "ROCm";
     repo = "ROCdbgapi";
     rev = "rocm-${finalAttrs.version}";
-    hash = "sha256-+CxaTmxRt/RicqQddqIEHs8vvAPCMKXkWg7kbZvnUsQ=";
+    hash = "sha256-6itfBrWVspobU47aiJAOQoxT8chwrq9scRn0or3bXto=";
   };
 
   nativeBuildInputs = [
@@ -83,13 +83,7 @@ in stdenv.mkDerivation (finalAttrs: {
     make -j$NIX_BUILD_CORES doc
   '';
 
-  postInstall = ''
-    substituteInPlace $out/lib/cmake/amd-dbgapi/amd-dbgapi-config.cmake \
-      --replace "/build/source/build/" ""
-
-    substituteInPlace $out/lib/cmake/amd-dbgapi/amd-dbgapi-targets.cmake \
-      --replace "/build/source/build" "$out"
-  '' + lib.optionalString buildDocs ''
+  postInstall = lib.optionalString buildDocs ''
     mv $out/share/html/amd-dbgapi $doc/share/doc/amd-dbgapi/html
     rmdir $out/share/html
   '';

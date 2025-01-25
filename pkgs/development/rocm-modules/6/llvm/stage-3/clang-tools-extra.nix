@@ -1,10 +1,9 @@
-{
-  stdenv,
-  callPackage,
-  rocmUpdateScript,
-  llvm,
-  clang-unwrapped,
-  gtest,
+{ stdenv
+, callPackage
+, rocmUpdateScript
+, llvm
+, clang-unwrapped
+, gtest
 }:
 
 callPackage ../base.nix rec {
@@ -25,6 +24,7 @@ callPackage ../base.nix rec {
     "-DCLANG_INCLUDE_DOCS=OFF"
     "-DCLANG_INCLUDE_TESTS=ON"
     "-DCLANG_TOOLS_EXTRA_INCLUDE_DOCS=ON"
+    "-DCLANG_ENABLE_AMDCLANG=ON"
   ];
 
   extraPostInstall = ''

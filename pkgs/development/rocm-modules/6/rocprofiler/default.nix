@@ -1,60 +1,34 @@
-{
-  lib,
-  stdenv,
-  fetchFromGitHub,
-  rocmUpdateScript,
-  symlinkJoin,
-  substituteAll,
-  cmake,
-  clang,
-  clr,
-  rocm-core,
-  rocm-thunk,
-  rocm-device-libs,
-  roctracer,
-  rocdbgapi,
-  rocm-smi,
-  hsa-amd-aqlprofile-bin,
-  numactl,
-  libpciaccess,
-  libxml2,
-  elfutils,
-  mpi,
-  systemd,
-  gtest,
-  python3Packages,
-  gpuTargets ? clr.gpuTargets,
+{ lib
+, stdenv
+, fetchFromGitHub
+, rocmUpdateScript
+, substituteAll
+, cmake
+, clang
+, clr
+, rocm-device-libs
+, rocmtoolkit-merged
+, numactl
+, libpciaccess
+, libedit
+, libxml2
+, elfutils
+, mpi
+, systemd
+, gtest
+, python3Packages
+, gpuTargets ? clr.gpuTargets
 }:
 
-let
-  rocmtoolkit-merged = symlinkJoin {
-    name = "rocmtoolkit-merged";
-
-    paths = [
-      rocm-core
-      rocm-thunk
-      rocm-device-libs
-      roctracer
-      rocdbgapi
-      rocm-smi
-      hsa-amd-aqlprofile-bin
-      clr
-    ];
-
-    postBuild = ''
-      rm -rf $out/nix-support
-    '';
-  };
-in
 stdenv.mkDerivation (finalAttrs: {
   pname = "rocprofiler";
-  version = "6.0.2";
+  version = "6.3.1";
 
   src = fetchFromGitHub {
     owner = "ROCm";
     repo = "rocprofiler";
     rev = "rocm-${finalAttrs.version}";
-    hash = "sha256-yzgw9g5cHAZpdbU44+1ScZyUcZ2I4GGfjbm9GSqCClk=";
+    hash = "sha256-pqQFeyAP016smrK+ttuwjQW5YuzX3Lz288yKWSFeN0M=";
   };
 
   patches = [
@@ -68,7 +42,7 @@ stdenv.mkDerivation (finalAttrs: {
     })
 
     # Fix for missing uint32_t not defined
-    ./0002-include-stdint-in-version.patch
+    # ./0002-include-stdint-in-version.patch
   ];
 
   nativeBuildInputs = [
@@ -85,6 +59,7 @@ stdenv.mkDerivation (finalAttrs: {
   buildInputs = [
     numactl
     libpciaccess
+    libedit
     libxml2
     elfutils
     mpi
@@ -98,6 +73,7 @@ stdenv.mkDerivation (finalAttrs: {
     "-DCMAKE_MODULE_PATH=${clr}/lib/cmake/hip"
     "-DHIP_ROOT_DIR=${clr}"
     "-DGPU_TARGETS=${lib.concatStringsSep ";" gpuTargets}"
+    "-DROCPROFILER_BUILD_PLUGIN_PERFETTO=OFF"
     # Manually define CMAKE_INSTALL_<DIR>
     # See: https://github.com/NixOS/nixpkgs/pull/197838
     "-DCMAKE_INSTALL_BINDIR=bin"
@@ -109,10 +85,10 @@ stdenv.mkDerivation (finalAttrs: {
     patchShebangs .
 
     substituteInPlace tests-v2/featuretests/profiler/CMakeLists.txt \
-      --replace "--build-id=sha1" "--build-id=sha1 --rocm-path=${clr} --rocm-device-lib-path=${rocm-device-libs}/amdgcn/bitcode"
+      --replace-fail "--build-id=sha1" "--build-id=sha1 --rocm-path=${clr} --rocm-device-lib-path=${rocm-device-libs}/amdgcn/bitcode"
 
     substituteInPlace test/CMakeLists.txt \
-      --replace "\''${ROCM_ROOT_DIR}/amdgcn/bitcode" "${rocm-device-libs}/amdgcn/bitcode"
+      --replace-fail "\''${ROCM_ROOT_DIR}/amdgcn/bitcode" "${rocm-device-libs}/amdgcn/bitcode"
   '';
 
   postInstall = ''
@@ -137,8 +113,6 @@ stdenv.mkDerivation (finalAttrs: {
     license = with licenses; [ mit ]; # mitx11
     maintainers = teams.rocm.members;
     platforms = platforms.linux;
-    broken =
-      versions.minor finalAttrs.version != versions.minor clr.version
-      || versionAtLeast finalAttrs.version "7.0.0";
+    broken = versions.minor finalAttrs.version != versions.minor clr.version || versionAtLeast finalAttrs.version "7.0.0";
   };
 })

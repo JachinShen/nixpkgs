@@ -1,6 +1,4 @@
 { stdenv
-, lib
-, config
 , callPackage
 , recurseIntoAttrs
 , symlinkJoin
@@ -18,7 +16,7 @@ let
   rocmUpdateScript = callPackage ./update.nix { };
 in rec {
   ## ROCm ##
-  llvm = recurseIntoAttrs (callPackage ./llvm/default.nix { inherit rocmUpdateScript rocm-device-libs rocm-runtime rocm-thunk clr; });
+  llvm = recurseIntoAttrs (callPackage ./llvm/default.nix { inherit rocmUpdateScript rocm-cmake rocm-runtime; });
 
   rocm-core = callPackage ./rocm-core {
     inherit rocmUpdateScript;
@@ -30,49 +28,43 @@ in rec {
     stdenv = llvm.rocmClangStdenv;
   };
 
-  rocm-thunk = callPackage ./rocm-thunk {
-    inherit rocmUpdateScript;
-    stdenv = llvm.rocmClangStdenv;
-  };
-
   rocm-smi = python3Packages.callPackage ./rocm-smi {
     inherit rocmUpdateScript;
     stdenv = llvm.rocmClangStdenv;
   };
 
-  # Eventually will be in the LLVM repo
-  rocm-device-libs = callPackage ./rocm-device-libs {
-    inherit rocmUpdateScript rocm-cmake;
-    stdenv = llvm.rocmClangStdenv;
+  rocm-device-libs = llvm.device-libs;
+  rocm-comgr = llvm.comgr;
+  hipcc = llvm.hipcc;
+
+  # Needs GCC
+  rocprofiler-register = callPackage ./rocprofiler-register {
+    inherit rocmUpdateScript stdenv;
+    # inherit (llvm) clang;
   };
 
   rocm-runtime = callPackage ./rocm-runtime {
-    inherit rocmUpdateScript rocm-device-libs rocm-thunk;
+    inherit rocmUpdateScript rocm-device-libs rocprofiler-register;
     stdenv = llvm.rocmClangStdenv;
   };
 
-  # Eventually will be in the LLVM repo
-  rocm-comgr = callPackage ./rocm-comgr {
-    inherit rocmUpdateScript rocm-cmake rocm-device-libs;
-    stdenv = llvm.rocmClangStdenv;
-  };
+  rocm-thunk = rocm-runtime;
 
   rocminfo = callPackage ./rocminfo {
     inherit rocmUpdateScript rocm-cmake rocm-runtime;
     stdenv = llvm.rocmClangStdenv;
   };
 
-  clang-ocl = callPackage ./clang-ocl {
-    inherit rocmUpdateScript rocm-cmake rocm-device-libs;
-    stdenv = llvm.rocmClangStdenv;
-  };
+  clang-ocl= throw ''
+    'clang-ocl' has been deprecated.
+  '';
 
   # Unfree
   hsa-amd-aqlprofile-bin = callPackage ./hsa-amd-aqlprofile-bin {
     stdenv = llvm.rocmClangStdenv;
   };
 
-  # Broken, too many errors
+  # # Broken, too many errors
   rdc = callPackage ./rdc {
     inherit rocmUpdateScript rocm-smi rocm-runtime stdenv;
     # stdenv = llvm.rocmClangStdenv;
@@ -85,16 +77,15 @@ in rec {
     stdenv = llvm.rocmClangStdenv;
   };
 
-  # Eventually will be in the LLVM repo
-  hipcc = callPackage ./hipcc {
-    inherit rocmUpdateScript;
+  # Replaces hip, opencl-runtime, and rocclr
+  clr = callPackage ./clr {
+    inherit rocmUpdateScript rocm-core hip-common hipcc rocm-device-libs rocm-comgr rocm-runtime rocminfo rocm-smi rocprofiler-register roctracer;
+    inherit (llvm) clang;
     stdenv = llvm.rocmClangStdenv;
   };
 
-  # Replaces hip, opencl-runtime, and rocclr
-  clr = callPackage ./clr {
-    inherit rocmUpdateScript hip-common hipcc rocm-device-libs rocm-comgr rocm-runtime roctracer rocminfo rocm-smi;
-    inherit (llvm) clang;
+  hip-tests = callPackage ./hiptests {
+    inherit rocmUpdateScript rocm-cmake clr;
     stdenv = llvm.rocmClangStdenv;
   };
 
@@ -104,15 +95,9 @@ in rec {
     stdenv = llvm.rocmClangStdenv;
   };
 
-  # Needs GCC
-  rocprofiler = callPackage ./rocprofiler {
-    inherit rocmUpdateScript clr rocm-core rocm-thunk rocm-device-libs roctracer rocdbgapi rocm-smi hsa-amd-aqlprofile-bin stdenv;
-    inherit (llvm) clang;
-  };
-
-  # Needs GCC
-  roctracer = callPackage ./roctracer {
-    inherit rocmUpdateScript rocm-device-libs rocm-runtime clr stdenv;
+  rocdbgapi = callPackage ./rocdbgapi {
+    inherit rocmUpdateScript rocm-cmake rocm-comgr rocm-runtime;
+    stdenv = llvm.rocmClangStdenv;
   };
 
   rocgdb = callPackage ./rocgdb {
@@ -120,9 +105,34 @@ in rec {
     stdenv = llvm.rocmClangStdenv;
   };
 
-  rocdbgapi = callPackage ./rocdbgapi {
-    inherit rocmUpdateScript rocm-cmake rocm-comgr rocm-runtime;
-    stdenv = llvm.rocmClangStdenv;
+  # Needs GCC
+  roctracer = callPackage ./roctracer {
+    inherit rocmUpdateScript rocm-device-libs rocm-runtime clr stdenv;
+  };
+
+  rocmtoolkit-merged = symlinkJoin {
+    name = "rocmtoolkit-merged";
+
+    paths = [
+      rocm-core
+      rocm-thunk
+      rocm-device-libs
+      roctracer
+      rocdbgapi
+      rocm-smi
+      hsa-amd-aqlprofile-bin
+      clr
+    ];
+
+    postBuild = ''
+      rm -rf $out/nix-support
+    '';
+  };
+
+  # Needs GCC
+  rocprofiler = callPackage ./rocprofiler {
+    inherit rocmUpdateScript clr rocm-device-libs rocmtoolkit-merged stdenv;
+    inherit (llvm) clang;
   };
 
   rocr-debug-agent = callPackage ./rocr-debug-agent {
@@ -133,59 +143,70 @@ in rec {
   rocprim = callPackage ./rocprim {
     inherit rocmUpdateScript rocm-cmake clr;
     stdenv = llvm.rocmClangStdenv;
+    gpuTargets = clr.gpuTargets;
   };
 
   rocsparse = callPackage ./rocsparse {
     inherit rocmUpdateScript rocm-cmake rocprim clr;
     stdenv = llvm.rocmClangStdenv;
+    gpuTargets = clr.gpuTargets;
   };
 
   rocthrust = callPackage ./rocthrust {
     inherit rocmUpdateScript rocm-cmake rocprim clr;
     stdenv = llvm.rocmClangStdenv;
+    gpuTargets = clr.gpuTargets;
   };
 
   rocrand = callPackage ./rocrand {
     inherit rocmUpdateScript rocm-cmake clr;
     stdenv = llvm.rocmClangStdenv;
+    gpuTargets = clr.gpuTargets;
   };
 
   hiprand = callPackage ./hiprand {
     inherit rocmUpdateScript rocm-cmake clr rocrand;
     stdenv = llvm.rocmClangStdenv;
+    gpuTargets = clr.gpuTargets;
   };
 
   rocfft = callPackage ./rocfft {
-    inherit rocmUpdateScript rocm-cmake rocrand rocfft clr;
+    inherit rocmUpdateScript rocm-cmake rocrand clr;
     inherit (llvm) openmp;
     stdenv = llvm.rocmClangStdenv;
+    gpuTargets = clr.gpuTargets;
   };
 
   rccl = callPackage ./rccl {
-    inherit rocmUpdateScript rocm-cmake rocm-smi clr hipify;
+    inherit rocmUpdateScript rocm-cmake rocm-core rocm-smi clr hipify;
     stdenv = llvm.rocmClangStdenv;
+    gpuTargets = clr.gpuTargets;
   };
 
   hipcub = callPackage ./hipcub {
     inherit rocmUpdateScript rocm-cmake rocprim clr;
     stdenv = llvm.rocmClangStdenv;
+    gpuTargets = clr.gpuTargets;
   };
 
   hipsparse = callPackage ./hipsparse {
     inherit rocmUpdateScript rocm-cmake rocsparse clr;
     inherit (llvm) openmp;
     stdenv = llvm.rocmClangStdenv;
+    gpuTargets = clr.gpuTargets;
   };
 
   hipfort = callPackage ./hipfort {
     inherit rocmUpdateScript rocm-cmake;
     stdenv = llvm.rocmClangStdenv;
+    gpuTargets = clr.gpuTargets;
   };
 
   hipfft = callPackage ./hipfft {
     inherit rocmUpdateScript rocm-cmake rocfft clr;
     inherit (llvm) openmp;
     stdenv = llvm.rocmClangStdenv;
+    gpuTargets = clr.gpuTargets;
   };
 
   tensile = python3Packages.callPackage ./tensile {
@@ -197,11 +218,14 @@ in rec {
     inherit rocmUpdateScript rocm-cmake clr tensile;
     inherit (llvm) openmp;
     stdenv = llvm.rocmClangStdenv;
+    gpuTargets = ["gfx1030"];
+    tensileLogic = "asm_ci"; # TODO: asm_full
   };
 
   rocsolver = callPackage ./rocsolver {
-    inherit rocmUpdateScript rocm-cmake rocblas rocsparse clr;
+    inherit rocmUpdateScript rocm-cmake rocblas rocsparse rocprim clr;
     stdenv = llvm.rocmClangStdenv;
+    gpuTargets = ["gfx1030"];
   };
 
   rocwmma = callPackage ./rocwmma {
@@ -226,24 +250,44 @@ in rec {
   };
 
   hipsolver = callPackage ./hipsolver {
-    inherit rocmUpdateScript rocm-cmake rocblas rocsolver clr;
+    inherit rocmUpdateScript rocm-cmake rocblas rocsolver rocsparse clr;
+    stdenv = llvm.rocmClangStdenv;
+  };
+
+  hipblas-common = callPackage ./hipblas-common {
+    inherit rocmUpdateScript rocm-cmake;
     stdenv = llvm.rocmClangStdenv;
   };
 
   hipblas = callPackage ./hipblas {
-    inherit rocmUpdateScript rocm-cmake rocblas rocsolver clr;
+    inherit rocmUpdateScript rocm-cmake rocblas rocsolver clr hipblas-common;
     stdenv = llvm.rocmClangStdenv;
   };
 
   # hipBlasLt - Very broken with Tensile at the moment, only supports GFX9
   # hipTensor - Only supports GFX9
 
-  composable_kernel = callPackage ./composable_kernel/unpack.nix {
+  miopengemm= throw ''
+    'miopengemm' has been deprecated.
+    It is still available for some time as part of rocmPackages_5.
+  ''; # Added 2024-3-3
+
+  # composable_kernel = callPackage ./composable_kernel/unpack.nix {
     composable_kernel_build = callPackage ./composable_kernel {
-      inherit rocmUpdateScript rocm-cmake clr;
-      inherit (llvm) openmp clang-tools-extra;
+      inherit rocmUpdateScript rocm-cmake clr rocmtoolkit-merged;
+      inherit (llvm) openmp clang-tools-extra ;
       stdenv = llvm.rocmClangStdenv;
+      gpuTargets = ["gfx90a" "gfx1030" "gfx1100"];
     };
+    # composable_kernel_codegen = callPackage ./composable_kernel/codegen.nix {
+    #   inherit rocmUpdateScript rocm-cmake clr rocmtoolkit-merged;
+    #   inherit (llvm) openmp clang-tools-extra ;
+    #   stdenv = llvm.rocmClangStdenv;
+    #   gpuTargets = [ "gfx90a" "gfx1030" ];
+    # };
+  composable_kernel = callPackage ./composable_kernel/unpack.nix {
+    composable_kernel_build = composable_kernel_build;
+    # composable_kernel_codegen = composable_kernel_codegen;
   };
 
   half = callPackage ./half {
@@ -252,19 +296,25 @@ in rec {
   };
 
   miopen = callPackage ./miopen {
-    inherit rocmUpdateScript rocm-cmake rocblas clang-ocl composable_kernel rocm-comgr clr rocm-docs-core half roctracer;
+    inherit rocmUpdateScript rocm-cmake rocblas hipblas hipblas-common rocrand rocm-comgr clr rocm-docs-core half roctracer;
     inherit (llvm) clang-tools-extra;
     stdenv = llvm.rocmClangStdenv;
     rocmlir = rocmlir-rock;
     boost = boost179.override { enableStatic = true; };
+    # buildTests = true;
   };
 
   miopen-hip = miopen;
 
+  miopen-opencl= throw ''
+    'miopen-opencl' has been deprecated.
+    It is still available for some time as part of rocmPackages_5.
+  ''; # Added 2024-3-3
+
   migraphx = callPackage ./migraphx {
-    inherit rocmUpdateScript rocm-cmake rocblas composable_kernel miopen clr half rocm-device-libs;
+    inherit rocmUpdateScript rocm-cmake rocblas miopen clr half rocm-device-libs;
     inherit (llvm) openmp clang-tools-extra;
-    stdenv = llvm.rocmClangStdenv;
+    stdenv = llvm.rocmClangNoLLDStdenv;
     rocmlir = rocmlir-rock;
   };
 
@@ -319,6 +369,12 @@ in rec {
     useCPU = false;
   };
 
+  mivisionx-opencl = throw ''
+    'mivisionx-opencl' has been deprecated.
+    Other versions of mivisionx are still available.
+    It is also still available for some time as part of rocmPackages_5.
+  ''; # Added 2024-3-24
+
   mivisionx-cpu = mivisionx.override {
     rpp = rpp-cpu;
     useOpenCL = false;
@@ -336,12 +392,12 @@ in rec {
       name = "rocm-developer-tools-meta";
 
       paths = [
-        hsa-amd-aqlprofile-bin
+        # hsa-amd-aqlprofile-bin
         rocm-core
         rocr-debug-agent
         roctracer
         rocdbgapi
-        rocprofiler
+        # rocprofiler
         rocgdb
         rocm-language-runtime
       ];
@@ -511,20 +567,4 @@ in rec {
       ];
     };
   };
-} // lib.optionalAttrs config.allowAliases {
-  miopengemm= throw ''
-    'miopengemm' has been deprecated.
-    It is still available for some time as part of rocmPackages_5.
-  ''; # Added 2024-3-3
-
-  miopen-opencl= throw ''
-    'miopen-opencl' has been deprecated.
-    It is still available for some time as part of rocmPackages_5.
-  ''; # Added 2024-3-3
-
-  mivisionx-opencl = throw ''
-    'mivisionx-opencl' has been deprecated.
-    Other versions of mivisionx are still available.
-    It is also still available for some time as part of rocmPackages_5.
-  ''; # Added 2024-3-24
 }

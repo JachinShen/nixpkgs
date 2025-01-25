@@ -1,15 +1,14 @@
-{
-  lib,
-  stdenv,
-  makeImpureTest,
-  fetchFromGitHub,
-  clr,
-  cmake,
-  pkg-config,
-  glew,
-  libglut,
-  opencl-headers,
-  ocl-icd,
+{ lib
+, stdenv
+, makeImpureTest
+, fetchFromGitHub
+, clr
+, cmake
+, pkg-config
+, glew
+, libglut
+, opencl-headers
+, ocl-icd
 }:
 
 let
@@ -25,17 +24,9 @@ let
       hash = "sha256-qARQpUiYsamHbko/I1gPZE9pUGJ+3396Vk2n7ERSftA=";
     };
 
-    nativeBuildInputs = [
-      cmake
-      pkg-config
-    ];
+    nativeBuildInputs = [ cmake pkg-config ];
 
-    buildInputs = [
-      glew
-      libglut
-      opencl-headers
-      ocl-icd
-    ];
+    buildInputs = [ glew libglut opencl-headers ocl-icd ];
 
     installPhase = ''
       runHook preInstall
@@ -51,9 +42,9 @@ let
 
     meta = with lib; {
       description = "Samples from the AMD APP SDK (with OpenCRun support)";
-      homepage = "https://github.com/OpenCL/AMD_APP_samples";
-      license = licenses.bsd2;
-      platforms = platforms.linux;
+      homepage    = "https://github.com/OpenCL/AMD_APP_samples";
+      license     = licenses.bsd2;
+      platforms   = platforms.linux;
       maintainers = lib.teams.rocm.members;
     };
   };
@@ -63,11 +54,7 @@ makeImpureTest {
   name = "opencl-example";
   testedPackage = "rocmPackages_6.clr";
 
-  sandboxPaths = [
-    "/sys"
-    "/dev/dri"
-    "/dev/kfd"
-  ];
+  sandboxPaths = [ "/sys" "/dev/dri" "/dev/kfd" ];
 
   nativeBuildInputs = [ examples ];
 

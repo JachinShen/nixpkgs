@@ -1,0 +1,15 @@
+diff --git a/cmake/toolchain-options.cmake b/cmake/toolchain-options.cmake
+index 42587a3..9d35ff6 100644
+--- a/cmake/toolchain-options.cmake
++++ b/cmake/toolchain-options.cmake
+@@ -49,10 +49,6 @@ endif()
+ if( CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+   message( STATUS "Use amdclang to build for amdgpu backend" )
+ 
+-  if( CMAKE_CXX_COMPILER MATCHES ".*hipcc.*" )
+-    message( STATUS "WARNING: hipcc compiler use is deprecated. Use amdclang++ directly." )
+-  endif()
+-
+   # set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fallow-half-arguments-and-returns" )
+   set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__HIP_HCC_COMPAT_MODE__=1" )
+ 

@@ -1,33 +1,33 @@
-{
-  lib,
-  stdenv,
-  fetchFromGitHub,
-  rocmUpdateScript,
-  pkg-config,
-  texinfo,
-  bison,
-  flex,
-  glibc,
-  zlib,
-  gmp,
-  mpfr,
-  ncurses,
-  expat,
-  rocdbgapi,
-  python3,
-  babeltrace,
-  sourceHighlight,
+{ lib
+, stdenv
+, fetchFromGitHub
+, rocmUpdateScript
+, pkg-config
+, texinfo
+, bison
+, flex
+, glibc
+, zlib
+, gmp
+, mpfr
+, ncurses
+, expat
+, rocdbgapi
+, python3
+, babeltrace
+, sourceHighlight
+, perl
 }:
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "rocgdb";
-  version = "6.0.2";
+  version = "6.3.1";
 
   src = fetchFromGitHub {
     owner = "ROCm";
     repo = "ROCgdb";
     rev = "rocm-${finalAttrs.version}";
-    hash = "sha256-XeX/k8gfo9HgcUSIjs35C7IqCmFhvBOqQJSOoPF6HK4=";
+    hash = "sha256-P9NbYMrCs0UpnaEIP+bJEM6yPiRHzl0lI0J4+A7/ePc=";
   };
 
   nativeBuildInputs = [
@@ -35,6 +35,7 @@ stdenv.mkDerivation (finalAttrs: {
     texinfo # For makeinfo
     bison
     flex
+    perl
   ];
 
   buildInputs = [
